@@ -55,7 +55,7 @@ export default function AddBalance() {
   const [txHash, setTxHash] = useState("")
   const [notes, setNotes] = useState("")
 
-  const walletAddress = "TCpT92eetbS6Bj5uxTc7cwkxwf4g6DOSUJ"
+  const walletAddress = "TWusaMt7fd6t9vABzFfGS84ibZZUax6wz3"
 
   const copyAddress = () => {
     navigator.clipboard.writeText(walletAddress)
@@ -94,18 +94,11 @@ export default function AddBalance() {
 
             <div className="flex flex-col items-center space-y-4">
               <div className="w-48 h-48 bg-white p-4 rounded-lg border-2 border-muted">
-                <div className="w-full h-full bg-black/80 flex items-center justify-center rounded">
-                  <div className="grid grid-cols-12 gap-1">
-                    {Array.from({ length: 144 }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-2 ${
-                          Math.random() > 0.5 ? "bg-black" : "bg-white"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
+                <img 
+                  src="https://res.cloudinary.com/djecn7fxz/image/upload/v1754663116/qr-code_uvgvde.jpg" 
+                  alt="Wallet QR Code" 
+                  className="w-full h-full object-contain rounded"
+                />
               </div>
               <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center">
                 <QrCode className="h-4 w-4 text-primary" />
