@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
 import { Search, Calendar, Globe, DollarSign, MapPin, Clock } from "lucide-react"
 
 const mockAccounts = [
@@ -72,11 +73,27 @@ const mockAccounts = [
 export default function AdAccounts() {
   const [selectedAccount, setSelectedAccount] = useState(mockAccounts[0])
   const [searchTerm, setSearchTerm] = useState("")
+  const [topUpAmount, setTopUpAmount] = useState("")
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false)
+  const { toast } = useToast()
 
   const filteredAccounts = mockAccounts.filter(account =>
     account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     account.id.includes(searchTerm)
   )
+
+  const handleTopUpSubmit = () => {
+    if (topUpAmount && parseFloat(topUpAmount) > 0) {
+      setIsTopUpOpen(false)
+      setTopUpAmount("")
+      toast({
+        title: "Top-up successfully!",
+        description: "You will be notified after approval.",
+      })
+    }
+  }
+
+  const isTopUpDisabled = !topUpAmount || parseFloat(topUpAmount) <= 0
 
   return (
     <div className="space-y-6">
@@ -169,9 +186,34 @@ export default function AdAccounts() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button variant="default" className="flex-1 sm:flex-none sm:min-w-32">
-                    Top-Up
-                  </Button>
+                  <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="default" className="flex-1 sm:flex-none sm:min-w-32">
+                        Top-Up
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-center text-xl font-bold">Top-Up Account</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <Input
+                          type="number"
+                          placeholder="Enter amount"
+                          value={topUpAmount}
+                          onChange={(e) => setTopUpAmount(e.target.value)}
+                          className="text-center"
+                        />
+                        <Button 
+                          onClick={handleTopUpSubmit}
+                          disabled={isTopUpDisabled}
+                          className="w-full"
+                        >
+                          Send
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <Button variant="outline" className="flex-1 sm:flex-none sm:min-w-32">
                     Replace
                   </Button>
