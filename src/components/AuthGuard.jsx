@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function AuthGuard({ children }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -13,14 +13,14 @@ export default function AuthGuard({ children }) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          router.push('/login');
+          navigate('/login');
           return;
         }
         
         setAuthenticated(true);
       } catch (error) {
         console.error('Error checking session:', error);
-        router.push('/login');
+        navigate('/login');
       } finally {
         setLoading(false);
       }
@@ -31,14 +31,14 @@ export default function AuthGuard({ children }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
-        router.push('/login');
+        navigate('/login');
       } else if (event === 'SIGNED_IN') {
         setAuthenticated(true);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [navigate]);
 
   if (loading) {
     return (

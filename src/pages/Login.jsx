@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ export default function Login() {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSendCode = async (e) => {
@@ -110,7 +110,7 @@ export default function Login() {
           title: "Success",
           description: "Login successful! Redirecting...",
         });
-        router.push('/');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
