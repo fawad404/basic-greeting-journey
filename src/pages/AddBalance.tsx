@@ -93,10 +93,14 @@ export default function AddBalance() {
 
         setPayments(data || [])
 
-        // Calculate total transfer amount from approved payments
+        // Calculate user balance: sum of (amount - fee - topup) for approved payments only
         const approvedPayments = (data || []).filter(payment => payment.status === 'approved')
-        const totalApproved = approvedPayments.reduce((sum, payment) => sum + payment.amount, 0)
-        setTotalTransferAmount(totalApproved)
+        const userBalance = approvedPayments.reduce((sum, payment) => {
+          const fee = payment.fee || 0
+          const topup = 0 // Top-up amount is 0 for now
+          return sum + (payment.amount - fee - topup)
+        }, 0)
+        setTotalTransferAmount(userBalance)
       }
     } catch (error) {
       console.error('Error fetching payments:', error)
@@ -314,7 +318,7 @@ export default function AddBalance() {
                         {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
-                    <td className="py-4 px-2 font-medium">${payments.filter(p => p.status === 'approved' && new Date(p.created_at) <= new Date(payment.created_at)).reduce((sum, p) => sum + p.amount, 0).toFixed(2)}</td>
+                    <td className="py-4 px-2 font-medium">${payment.amount.toFixed(2)} USDT</td>
                     <td className="py-4 px-2 font-medium">$0.00</td>
                     <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
