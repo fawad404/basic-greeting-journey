@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
 import { Pencil, Plus } from "lucide-react"
 
 interface User {
@@ -33,12 +34,25 @@ interface AdAccount {
 }
 
 export default function UserAccounts() {
+  const { isAdmin } = useAuth()
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
   const { toast } = useToast()
+
+  // Add admin check
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
+          <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+        </div>
+      </div>
+    )
+  }
 
   const [formData, setFormData] = useState({
     user_id: '',
@@ -65,7 +79,7 @@ export default function UserAccounts() {
         .order('email')
 
       // Fetch ad accounts with user info
-      const { data: accountsData } = await supabase
+      const { data: accountsData, error: accountsError } = await supabase
         .from('ad_accounts')
         .select(`
           *,
@@ -73,6 +87,12 @@ export default function UserAccounts() {
         `)
         .order('created_at', { ascending: false })
 
+      if (accountsError) {
+        console.error('Error fetching accounts:', accountsError)
+        throw accountsError
+      }
+
+      console.log('Fetched accounts:', accountsData)
       setUsers(usersData || [])
       setAccounts((accountsData as any) || [])
     } catch (error) {
@@ -182,7 +202,7 @@ export default function UserAccounts() {
           <p className="text-muted-foreground">Manage ad accounts for users</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
