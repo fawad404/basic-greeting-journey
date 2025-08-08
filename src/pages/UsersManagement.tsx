@@ -30,30 +30,35 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch auth users and their roles
-      const { data: userRoles, error } = await supabase
+      // Fetch user roles and join with users table
+      const { data: userRolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
 
-      // Create a map of user roles
-      const roleMap = new Map(userRoles.map(ur => [ur.user_id, ur.role]));
-
-      // For demo purposes, we'll show users from the users table
-      // In production, you'd need an admin API endpoint to list auth.users
+      // Also fetch from users table to get additional info
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('*');
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error fetching from users table:', usersError);
+      }
 
-      const formattedUsers = usersData.map(user => ({
-        id: user.id,
-        email: user.email,
-        created_at: user.created_at,
-        role: roleMap.get(user.id) || 'customer',
-      }));
+      // Create a map from users table for additional info
+      const usersMap = new Map((usersData || []).map(u => [u.id, u]));
+
+      // Build the final users list from user_roles as the source of truth
+      const formattedUsers = userRolesData.map(userRole => {
+        const userInfo = usersMap.get(userRole.user_id);
+        return {
+          id: userRole.user_id,
+          email: userInfo?.email || 'Unknown', // Fallback for email
+          created_at: userInfo?.created_at || new Date().toISOString(),
+          role: userRole.role,
+        };
+      });
 
       setUsers(formattedUsers);
     } catch (error) {
