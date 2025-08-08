@@ -59,7 +59,7 @@ export default function AddBalance() {
   const [notes, setNotes] = useState("")
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
-  const [userBalance, setUserBalance] = useState(0)
+  const [totalTransferAmount, setTotalTransferAmount] = useState(0)
   
   const { user } = useAuth()
   const { toast } = useToast()
@@ -93,14 +93,10 @@ export default function AddBalance() {
 
         setPayments(data || [])
 
-        // Fetch user balance - only approved amounts
-        const { data: balanceData } = await supabase
-          .from('user_balances')
-          .select('balance')
-          .eq('user_id', userData.id)
-          .single()
-
-        setUserBalance(balanceData?.balance || 0)
+        // Calculate total transfer amount from approved payments
+        const approvedPayments = (data || []).filter(payment => payment.status === 'approved')
+        const totalApproved = approvedPayments.reduce((sum, payment) => sum + payment.amount, 0)
+        setTotalTransferAmount(totalApproved)
       }
     } catch (error) {
       console.error('Error fetching payments:', error)
@@ -318,8 +314,8 @@ export default function AddBalance() {
                         {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
-                    <td className="py-4 px-2 font-medium">${userBalance.toFixed(2)}</td>
-                    <td className="py-4 px-2 font-medium">${payment.amount} USDT</td>
+                    <td className="py-4 px-2 font-medium">${payments.filter(p => p.status === 'approved' && new Date(p.created_at) <= new Date(payment.created_at)).reduce((sum, p) => sum + p.amount, 0).toFixed(2)}</td>
+                    <td className="py-4 px-2 font-medium">$0.00</td>
                     <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
                       <Button 
