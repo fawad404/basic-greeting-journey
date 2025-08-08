@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
-import { CheckCircle, XCircle, Clock, Receipt, ExternalLink } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Receipt, ExternalLink, Edit } from "lucide-react"
 
 interface Payment {
   id: string
@@ -28,6 +28,10 @@ export default function Payments() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [fee, setFee] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editAmount, setEditAmount] = useState("")
+  const [editTxHash, setEditTxHash] = useState("")
+  const [editNote, setEditNote] = useState("")
   const { toast } = useToast()
 
   const fetchPayments = async () => {
@@ -72,6 +76,53 @@ export default function Payments() {
   useEffect(() => {
     fetchPayments()
   }, [])
+
+  const handleEditClick = (payment: Payment) => {
+    setSelectedPayment(payment)
+    setEditAmount(payment.amount.toString())
+    setEditTxHash(payment.transaction_id)
+    setEditNote(payment.note || "")
+    setFee(payment.fee?.toString() || "")
+    setEditDialogOpen(true)
+  }
+
+  const handleConfirmEdit = async () => {
+    if (!selectedPayment) return
+
+    try {
+      const feeAmount = fee ? parseFloat(fee) : null
+      const amountValue = parseFloat(editAmount)
+
+      // Update payment details
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .update({ 
+          amount: amountValue,
+          transaction_id: editTxHash,
+          note: editNote || null,
+          fee: feeAmount
+        })
+        .eq('id', selectedPayment.id)
+
+      if (paymentError) throw paymentError
+
+      toast({
+        title: "Payment Updated",
+        description: "Payment details have been updated successfully.",
+      })
+
+      setEditDialogOpen(false)
+      setSelectedPayment(null)
+      fetchPayments()
+    } catch (error) {
+      console.error('Error updating payment:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update payment",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleApproveClick = (payment: Payment) => {
     setSelectedPayment(payment)
@@ -328,16 +379,89 @@ export default function Payments() {
                         </Button>
                       </div>
                     )}
-                    {payment.status === 'approved' && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleReject(payment.id)}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditClick(payment)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Payment</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="editAmount">Amount</Label>
+                              <Input
+                                id="editAmount"
+                                type="number"
+                                placeholder="0.00"
+                                value={editAmount}
+                                onChange={(e) => setEditAmount(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="editTxHash">Transaction Hash</Label>
+                              <Input
+                                id="editTxHash"
+                                placeholder="Transaction hash"
+                                value={editTxHash}
+                                onChange={(e) => setEditTxHash(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="editNote">Note</Label>
+                              <Input
+                                id="editNote"
+                                placeholder="Note"
+                                value={editNote}
+                                onChange={(e) => setEditNote(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="editFee">Fee</Label>
+                              <Input
+                                id="editFee"
+                                type="number"
+                                placeholder="0.00"
+                                value={fee}
+                                onChange={(e) => setFee(e.target.value)}
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setEditDialogOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                onClick={handleConfirmEdit}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                              >
+                                Save Changes
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      {payment.status === 'approved' && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReject(payment.id)}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

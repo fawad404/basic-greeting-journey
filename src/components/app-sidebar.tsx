@@ -60,15 +60,20 @@ export function AppSidebar() {
           .single()
 
         if (userData) {
-          // Only fetch balance from approved payments
-          const { data: balanceData } = await supabase
-            .from('user_balances')
-            .select('balance')
+          // Fetch payments and calculate balance as (amount - fee - topup) for approved payments
+          const { data: payments } = await supabase
+            .from('payments')
+            .select('*')
             .eq('user_id', userData.id)
-            .single()
+            .eq('status', 'approved')
 
-          if (balanceData) {
-            setUserBalance(balanceData.balance)
+          if (payments) {
+            const calculatedBalance = payments.reduce((sum, payment) => {
+              const fee = payment.fee || 0
+              const topup = 0 // Top-up amount is 0 for now
+              return sum + (payment.amount - fee - topup)
+            }, 0)
+            setUserBalance(calculatedBalance)
           }
         }
       } catch (error) {
