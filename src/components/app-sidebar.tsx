@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { 
   LayoutDashboard, 
   Ticket, 
@@ -7,9 +6,11 @@ import {
   BarChart3, 
   Settings, 
   HelpCircle,
-  LogOut
+  LogOut,
+  UserCheck
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
 
 import {
   Sidebar,
@@ -25,7 +26,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
-const navigationItems = [
+const baseNavigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Tickets", url: "/tickets", icon: Ticket },
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
@@ -36,11 +37,20 @@ const navigationItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ]
 
+const adminNavigationItems = [
+  { title: "Users Management", url: "/users-management", icon: UserCheck },
+]
+
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
   const currentPath = location?.pathname || "/"
   const collapsed = state === "collapsed"
+  const { user, isAdmin, logout } = useAuth()
+  
+  const navigationItems = isAdmin 
+    ? [...baseNavigationItems, ...adminNavigationItems]
+    : baseNavigationItems
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -101,8 +111,8 @@ export function AppSidebar() {
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">Lixinze 50</p>
-              <p className="text-xs text-sidebar-foreground/60">$1,138.40</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
+              <p className="text-xs text-sidebar-foreground/60">{isAdmin ? 'Admin' : 'Customer'}</p>
             </div>
           )}
         </div>
@@ -110,6 +120,7 @@ export function AppSidebar() {
           variant="ghost" 
           size={collapsed ? "icon" : "sm"}
           className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          onClick={logout}
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span className="ml-2">Logout</span>}
