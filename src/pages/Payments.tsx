@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
-import { CheckCircle, XCircle, Clock, Receipt } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Receipt, ExternalLink } from "lucide-react"
 
 interface Payment {
   id: string
@@ -222,7 +222,7 @@ export default function Payments() {
                 <TableHead>User Email</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Fee</TableHead>
-                <TableHead>Transaction ID</TableHead>
+                <TableHead>Transaction Hash</TableHead>
                 <TableHead>Note</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
@@ -236,9 +236,16 @@ export default function Payments() {
                   <TableCell>${payment.amount.toFixed(2)}</TableCell>
                   <TableCell>{payment.fee ? `$${payment.fee.toFixed(2)}` : '-'}</TableCell>
                   <TableCell className="font-mono text-sm">
-                    {payment.transaction_id.length > 20 
-                      ? `${payment.transaction_id.substring(0, 20)}...` 
-                      : payment.transaction_id}
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary hover:underline font-mono text-sm"
+                      onClick={() => window.open(`https://tronscan.org/#/transaction/${payment.transaction_id}`, '_blank')}
+                    >
+                      {payment.transaction_id.length > 20 
+                        ? `${payment.transaction_id.substring(0, 20)}...` 
+                        : payment.transaction_id}
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </Button>
                   </TableCell>
                   <TableCell>{payment.note || '-'}</TableCell>
                   <TableCell>{getStatusBadge(payment.status)}</TableCell>

@@ -93,7 +93,7 @@ export default function AddBalance() {
 
         setPayments(data || [])
 
-        // Fetch user balance
+        // Fetch user balance - only approved amounts
         const { data: balanceData } = await supabase
           .from('user_balances')
           .select('balance')
@@ -302,7 +302,8 @@ export default function AddBalance() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">DATE</th>
-                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">AMOUNT</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TOTAL TRANSFER AMOUNT</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TOP-UP AMOUNT</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">FEE</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TRANSACTION HASH</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">STATUS</th>
@@ -317,10 +318,15 @@ export default function AddBalance() {
                         {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
+                    <td className="py-4 px-2 font-medium">${userBalance.toFixed(2)}</td>
                     <td className="py-4 px-2 font-medium">${payment.amount} USDT</td>
                     <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
-                      <Button variant="link" className="p-0 h-auto text-primary hover:underline">
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-primary hover:underline"
+                        onClick={() => window.open(`https://tronscan.org/#/transaction/${payment.transaction_id}`, '_blank')}
+                      >
                         {payment.transaction_id.substring(0, 15)}...
                         <ExternalLink className="h-3 w-3 ml-1" />
                       </Button>

@@ -60,6 +60,7 @@ export function AppSidebar() {
           .single()
 
         if (userData) {
+          // Only fetch balance from approved payments
           const { data: balanceData } = await supabase
             .from('user_balances')
             .select('balance')
