@@ -3,9 +3,6 @@ import {
   Ticket, 
   Users, 
   CreditCard, 
-  BarChart3, 
-  Settings, 
-  HelpCircle,
   LogOut,
   UserCheck
 } from "lucide-react"
@@ -31,10 +28,6 @@ const baseNavigationItems = [
   { title: "Tickets", url: "/tickets", icon: Ticket },
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
   { title: "Add Balance", url: "/add-balance", icon: CreditCard },
-  { title: "Campaign Data", url: "/campaign-data", icon: BarChart3 },
-  { title: "Accounts History", url: "/accounts-history", icon: BarChart3 },
-  { title: "Help Center", url: "/help-center", icon: HelpCircle },
-  { title: "Settings", url: "/settings", icon: Settings },
 ]
 
 const adminNavigationItems = [
