@@ -39,7 +39,7 @@ const navigationItems = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
-  const currentPath = location.pathname
+  const currentPath = location?.pathname || "/"
   const collapsed = state === "collapsed"
 
   const isActive = (path: string) => {
