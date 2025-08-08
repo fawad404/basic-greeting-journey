@@ -80,37 +80,36 @@ export default function UsersManagement() {
 
     setIsCreating(true);
     try {
-      // Send OTP to create the user account
-      const { error } = await supabase.auth.signInWithOtp({
-        email: newUser.email,
-        options: {
-          shouldCreateUser: true,
+      // Call the create-user edge function
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email,
+          role: newUser.role,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating user:', error);
+        throw error;
+      }
 
-      // Insert user role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: '', // This would need to be handled differently in production
-          role: newUser.role,
-        }]);
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: 'Success',
-        description: `User invitation sent to ${newUser.email}. They will receive an OTP to complete registration.`,
+        description: `User created successfully: ${newUser.email}`,
       });
 
       setNewUser({ email: '', role: 'customer' });
       setDialogOpen(false);
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create user',
+        description: error.message || 'Failed to create user',
         variant: 'destructive',
       });
     } finally {
