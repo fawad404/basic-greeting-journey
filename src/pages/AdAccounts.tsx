@@ -145,39 +145,39 @@ export default function AdAccounts() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  Basic Information
-                </CardTitle>
+            {/* Account Information */}
+            <Card className="lg:col-span-2">
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl font-bold">Account Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Account Name</span>
-                    <p className="font-medium mt-1">{selectedAccount.name}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Account ID</span>
-                    <p className="font-medium mt-1">{selectedAccount.id}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Status</span>
-                    <div className="mt-1">
-                      <Badge 
-                        variant={selectedAccount.status === "Active" ? "default" : "secondary"}
-                        className={selectedAccount.status === "Active" ? "bg-success text-success-foreground" : ""}
-                      >
-                        {selectedAccount.status}
-                      </Badge>
+              <CardContent className="space-y-6">
+                <div className="border rounded-lg p-6 bg-muted/20">
+                  <div className="space-y-3 text-left">
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground">Creation Date:</span>
+                      <span className="ml-2 font-medium">2025.08.08</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground">Total Topup Amount:</span>
+                      <span className="ml-2 font-medium">$660</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground">Access Email:</span>
+                      <span className="ml-2 font-medium">test@gmail.com</span>
                     </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Gmail</span>
-                    <p className="font-medium mt-1">N/A</p>
-                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button variant="default" className="flex-1 sm:flex-none sm:min-w-32">
+                    Top-Up
+                  </Button>
+                  <Button variant="outline" className="flex-1 sm:flex-none sm:min-w-32">
+                    Replace
+                  </Button>
+                  <Button variant="outline" className="flex-1 sm:flex-none sm:min-w-32">
+                    Change Access
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -203,32 +203,6 @@ export default function AdAccounts() {
                   <div>
                     <span className="text-muted-foreground">Currency</span>
                     <p className="font-medium mt-1">{selectedAccount.currency}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Financial Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
-                  <DollarSign className="h-4 w-4" />
-                  Financial Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Account Budget</span>
-                    <p className="font-bold text-lg text-primary mt-1">${selectedAccount.budget.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Daily Budget</span>
-                    <p className="font-medium mt-1">${selectedAccount.dailyBudget.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total Spent</span>
-                    <p className="font-medium mt-1">${selectedAccount.totalSpent.toFixed(2)}</p>
                   </div>
                 </div>
               </CardContent>
