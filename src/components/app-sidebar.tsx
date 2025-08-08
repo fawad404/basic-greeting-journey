@@ -36,6 +36,7 @@ const baseNavigationItems = [
 
 const adminNavigationItems = [
   { title: "Users Management", url: "/users-management", icon: UserCheck },
+  { title: "User Accounts", url: "/user-accounts", icon: Users },
   { title: "Top-up Requests", url: "/top-up-requests", icon: FileText },
   { title: "Payments", url: "/payments", icon: Receipt },
 ]

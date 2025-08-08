@@ -1,0 +1,350 @@
+import React, { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/integrations/supabase/client"
+import { Pencil, Plus } from "lucide-react"
+
+interface User {
+  id: string;
+  email: string;
+}
+
+interface AdAccount {
+  id: string;
+  user_id: string;
+  account_name: string;
+  account_id: string;
+  status: string;
+  budget: number;
+  total_topup_amount: number;
+  access_email: string;
+  country: string;
+  timezone: string;
+  currency: string;
+  created_at: string;
+  users?: { email: string } | null;
+}
+
+export default function UserAccounts() {
+  const [accounts, setAccounts] = useState<AdAccount[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
+  const { toast } = useToast()
+
+  const [formData, setFormData] = useState({
+    user_id: '',
+    account_name: '',
+    account_id: '',
+    status: 'active',
+    budget: 0,
+    access_email: '',
+    country: 'N/A',
+    timezone: 'UTC',
+    currency: 'USD'
+  })
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      // Fetch users
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, email')
+        .order('email')
+
+      // Fetch ad accounts with user info
+      const { data: accountsData } = await supabase
+        .from('ad_accounts')
+        .select(`
+          *,
+          users:user_id (email)
+        `)
+        .order('created_at', { ascending: false })
+
+      setUsers(usersData || [])
+      setAccounts((accountsData as any) || [])
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch data"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      user_id: '',
+      account_name: '',
+      account_id: '',
+      status: 'active',
+      budget: 0,
+      access_email: '',
+      country: 'N/A',
+      timezone: 'UTC',
+      currency: 'USD'
+    })
+    setEditingAccount(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      if (editingAccount) {
+        // Update existing account
+        const { error } = await supabase
+          .from('ad_accounts')
+          .update(formData)
+          .eq('id', editingAccount.id)
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: "Ad account updated successfully"
+        })
+      } else {
+        // Create new account
+        const { error } = await supabase
+          .from('ad_accounts')
+          .insert([formData])
+
+        if (error) throw error
+
+        toast({
+          title: "Success", 
+          description: "Ad account created successfully"
+        })
+      }
+
+      setIsDialogOpen(false)
+      resetForm()
+      fetchData()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to save ad account"
+      })
+    }
+  }
+
+  const handleEdit = (account: AdAccount) => {
+    setEditingAccount(account)
+    setFormData({
+      user_id: account.user_id,
+      account_name: account.account_name,
+      account_id: account.account_id,
+      status: account.status as 'active' | 'suspended',
+      budget: account.budget,
+      access_email: account.access_email,
+      country: account.country,
+      timezone: account.timezone,
+      currency: account.currency
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false)
+    resetForm()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto py-6 px-4">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">User Accounts Management</h1>
+          <p className="text-muted-foreground">Manage ad accounts for users</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Account
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAccount ? 'Edit Ad Account' : 'Add New Ad Account'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="user_id">Select User</Label>
+                <Select 
+                  value={formData.user_id} 
+                  onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a user..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="account_name">Account Name</Label>
+                <Input
+                  id="account_name"
+                  value={formData.account_name}
+                  onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
+                  placeholder="e.g., BR06 - Burner - 1945 - Lxxx"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="account_id">Account ID</Label>
+                <Input
+                  id="account_id"
+                  value={formData.account_id}
+                  onChange={(e) => setFormData({ ...formData, account_id: e.target.value })}
+                  placeholder="e.g., 106-201-1997"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="access_email">Access Email</Label>
+                <Input
+                  id="access_email"
+                  type="email"
+                  value={formData.access_email}
+                  onChange={(e) => setFormData({ ...formData, access_email: e.target.value })}
+                  placeholder="test@gmail.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="budget">Budget</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  step="0.01"
+                  value={formData.budget}
+                  onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
+                  placeholder="500.00"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value: 'active' | 'suspended') => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleDialogClose}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingAccount ? 'Update Account' : 'Create Account'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Ad Accounts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Account Name</TableHead>
+                <TableHead>Account ID</TableHead>
+                <TableHead>User Email</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Budget</TableHead>
+                <TableHead>Access Email</TableHead>
+                <TableHead>Created Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {accounts.map((account) => (
+                <TableRow key={account.id}>
+                  <TableCell className="font-medium">{account.account_name}</TableCell>
+                  <TableCell>{account.account_id}</TableCell>
+                  <TableCell>{account.users?.email || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge variant={account.status === 'active' ? 'default' : 'destructive'}>
+                      {account.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>${account.budget.toFixed(2)}</TableCell>
+                  <TableCell>{account.access_email}</TableCell>
+                  <TableCell>{new Date(account.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(account)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {accounts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    No ad accounts found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

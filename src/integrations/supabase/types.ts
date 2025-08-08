@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_replacement_requests: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_replacement_requests_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_accounts: {
+        Row: {
+          access_email: string
+          account_id: string
+          account_name: string
+          budget: number
+          country: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          status: string
+          timezone: string | null
+          total_topup_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_email: string
+          account_id: string
+          account_name: string
+          budget?: number
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          status?: string
+          timezone?: string | null
+          total_topup_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_email?: string
+          account_id?: string
+          account_name?: string
+          budget?: number
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          status?: string
+          timezone?: string | null
+          total_topup_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
