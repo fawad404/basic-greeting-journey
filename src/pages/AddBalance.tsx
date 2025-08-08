@@ -1,4 +1,7 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -54,11 +57,105 @@ export default function AddBalance() {
   const [amount, setAmount] = useState("")
   const [txHash, setTxHash] = useState("")
   const [notes, setNotes] = useState("")
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(false)
+  
+  const { user } = useAuth()
+  const { toast } = useToast()
 
   const walletAddress = "TWusaMt7fd6t9vABzFfGS84ibZZUax6wz3"
 
   const copyAddress = () => {
     navigator.clipboard.writeText(walletAddress)
+    toast({
+      title: "Address copied",
+      description: "Wallet address copied to clipboard",
+    })
+  }
+
+  const fetchPayments = async () => {
+    if (!user) return
+
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (userData) {
+        const { data } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('user_id', userData.id)
+          .order('created_at', { ascending: false })
+
+        setPayments(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchPayments()
+    }
+  }, [user])
+
+  const handleSubmitPayment = async () => {
+    if (!amount || !txHash || !user) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (userData) {
+        const { error } = await supabase
+          .from('payments')
+          .insert({
+            user_id: userData.id,
+            amount: parseFloat(amount),
+            transaction_id: txHash,
+            note: notes || null,
+          })
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: "Successfully sent for approval. Status will update after admin review.",
+        })
+
+        // Reset form
+        setAmount("")
+        setTxHash("")
+        setNotes("")
+        
+        // Refresh payments list
+        fetchPayments()
+      }
+    } catch (error) {
+      console.error('Error submitting payment:', error)
+      toast({
+        title: "Error",
+        description: "Failed to submit payment request",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -168,9 +265,14 @@ export default function AddBalance() {
               />
             </div>
 
-            <Button className="w-full" size="lg">
+            <Button 
+              className="w-full" 
+              size="lg" 
+              onClick={handleSubmitPayment}
+              disabled={loading}
+            >
               <Send className="h-4 w-4 mr-2" />
-              Submit Payment
+              {loading ? "Submitting..." : "Submit Payment"}
             </Button>
           </CardContent>
         </Card>
@@ -197,36 +299,38 @@ export default function AddBalance() {
                 </tr>
               </thead>
               <tbody>
-                {paymentHistory.map((payment, index) => (
-                  <tr key={index} className="border-b border-border/50 hover:bg-muted/20">
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="border-b border-border/50 hover:bg-muted/20">
                     <td className="py-4 px-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {payment.date}
+                        {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
-                    <td className="py-4 px-2 font-medium">{payment.amount}</td>
-                    <td className="py-4 px-2 text-muted-foreground">{payment.fee}</td>
+                    <td className="py-4 px-2 font-medium">${payment.amount} USDT</td>
+                    <td className="py-4 px-2 text-muted-foreground">-</td>
                     <td className="py-4 px-2">
                       <Button variant="link" className="p-0 h-auto text-primary hover:underline">
-                        {payment.hash}...
+                        {payment.transaction_id.substring(0, 15)}...
                         <ExternalLink className="h-3 w-3 ml-1" />
                       </Button>
                     </td>
                     <td className="py-4 px-2">
                       <Badge 
-                        variant={payment.status === "Approved" ? "default" : "secondary"}
+                        variant={payment.status === "approved" ? "default" : "secondary"}
                         className={
-                          payment.status === "Approved" 
+                          payment.status === "approved" 
                             ? "bg-success text-success-foreground" 
-                            : payment.status === "Pending"
+                            : payment.status === "pending"
                             ? "bg-warning text-warning-foreground"
+                            : payment.status === "rejected"
+                            ? "bg-destructive text-destructive-foreground"
                             : ""
                         }
                       >
-                        {payment.status === "Approved" && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {payment.status === "Pending" && <Clock className="h-3 w-3 mr-1" />}
-                        {payment.status}
+                        {payment.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                        {payment.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                       </Badge>
                     </td>
                   </tr>

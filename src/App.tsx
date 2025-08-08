@@ -11,6 +11,8 @@ import Tickets from "./pages/Tickets";
 import AdAccounts from "./pages/AdAccounts";
 import AddBalance from "./pages/AddBalance";
 import UsersManagement from "./pages/UsersManagement";
+import Payments from "./pages/Payments";
+import TopUpRequests from "./pages/TopUpRequests";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -34,10 +36,8 @@ const App = () => (
                     <Route path="/ad-accounts" element={<AdAccounts />} />
                     <Route path="/add-balance" element={<AddBalance />} />
                     <Route path="/users-management" element={<UsersManagement />} />
-                    <Route path="/campaign-data" element={<Dashboard />} />
-                    <Route path="/accounts-history" element={<Dashboard />} />
-                    <Route path="/help-center" element={<Tickets />} />
-                    <Route path="/settings" element={<Dashboard />} />
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/top-up-requests" element={<TopUpRequests />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

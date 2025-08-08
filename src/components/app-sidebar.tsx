@@ -1,13 +1,17 @@
+import { useState, useEffect } from "react"
 import { 
   LayoutDashboard, 
   Ticket, 
   Users, 
   CreditCard, 
   LogOut,
-  UserCheck
+  UserCheck,
+  FileText,
+  Receipt
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
+import { supabase } from "@/integrations/supabase/client"
 
 import {
   Sidebar,
@@ -32,6 +36,8 @@ const baseNavigationItems = [
 
 const adminNavigationItems = [
   { title: "Users Management", url: "/users-management", icon: UserCheck },
+  { title: "Top-up Requests", url: "/top-up-requests", icon: FileText },
+  { title: "Payments", url: "/payments", icon: Receipt },
 ]
 
 export function AppSidebar() {
@@ -40,6 +46,39 @@ export function AppSidebar() {
   const currentPath = location?.pathname || "/"
   const collapsed = state === "collapsed"
   const { user, isAdmin, logout } = useAuth()
+  const [userBalance, setUserBalance] = useState(5247.82)
+
+  useEffect(() => {
+    const fetchUserBalance = async () => {
+      if (!user) return
+
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single()
+
+        if (userData) {
+          const { data: balanceData } = await supabase
+            .from('user_balances')
+            .select('balance')
+            .eq('user_id', userData.id)
+            .single()
+
+          if (balanceData) {
+            setUserBalance(balanceData.balance)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user balance:', error)
+      }
+    }
+
+    if (user) {
+      fetchUserBalance()
+    }
+  }, [user])
   
   const navigationItems = isAdmin 
     ? [...baseNavigationItems, ...adminNavigationItems]
@@ -105,7 +144,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
-              <p className="text-xs text-sidebar-foreground/60">Balance: $5,247.82</p>
+              <p className="text-xs text-sidebar-foreground/60">Balance: ${userBalance.toFixed(2)}</p>
             </div>
           )}
         </div>
