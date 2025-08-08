@@ -59,6 +59,7 @@ export default function AddBalance() {
   const [notes, setNotes] = useState("")
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
+  const [userBalance, setUserBalance] = useState(0)
   
   const { user } = useAuth()
   const { toast } = useToast()
@@ -91,6 +92,15 @@ export default function AddBalance() {
           .order('created_at', { ascending: false })
 
         setPayments(data || [])
+
+        // Fetch user balance
+        const { data: balanceData } = await supabase
+          .from('user_balances')
+          .select('balance')
+          .eq('user_id', userData.id)
+          .single()
+
+        setUserBalance(balanceData?.balance || 0)
       }
     } catch (error) {
       console.error('Error fetching payments:', error)
@@ -308,7 +318,7 @@ export default function AddBalance() {
                       </div>
                     </td>
                     <td className="py-4 px-2 font-medium">${payment.amount} USDT</td>
-                    <td className="py-4 px-2 text-muted-foreground">-</td>
+                    <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
                       <Button variant="link" className="p-0 h-auto text-primary hover:underline">
                         {payment.transaction_id.substring(0, 15)}...

@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, Receipt } from "lucide-react"
@@ -11,6 +14,7 @@ interface Payment {
   id: string
   user_id: string
   amount: number
+  fee: number | null
   transaction_id: string
   note: string | null
   status: 'pending' | 'approved' | 'rejected'
@@ -21,6 +25,9 @@ interface Payment {
 export default function Payments() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
+  const [fee, setFee] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const fetchPayments = async () => {
@@ -66,13 +73,26 @@ export default function Payments() {
     fetchPayments()
   }, [])
 
-  const handleApprove = async (paymentId: string, amount: number, userId: string) => {
+  const handleApproveClick = (payment: Payment) => {
+    setSelectedPayment(payment)
+    setFee("")
+    setDialogOpen(true)
+  }
+
+  const handleConfirmApprove = async () => {
+    if (!selectedPayment) return
+
     try {
-      // Update payment status
+      const feeAmount = fee ? parseFloat(fee) : null
+
+      // Update payment status and fee
       const { error: paymentError } = await supabase
         .from('payments')
-        .update({ status: 'approved' })
-        .eq('id', paymentId)
+        .update({ 
+          status: 'approved',
+          fee: feeAmount
+        })
+        .eq('id', selectedPayment.id)
 
       if (paymentError) throw paymentError
 
@@ -80,7 +100,7 @@ export default function Payments() {
       const { data: existingBalance, error: fetchError } = await supabase
         .from('user_balances')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', selectedPayment.user_id)
         .single()
 
       if (fetchError && fetchError.code !== 'PGRST116') {
@@ -91,15 +111,15 @@ export default function Payments() {
         // Update existing balance
         const { error: updateError } = await supabase
           .from('user_balances')
-          .update({ balance: existingBalance.balance + amount })
-          .eq('user_id', userId)
+          .update({ balance: existingBalance.balance + selectedPayment.amount })
+          .eq('user_id', selectedPayment.user_id)
 
         if (updateError) throw updateError
       } else {
         // Create new balance record
         const { error: insertError } = await supabase
           .from('user_balances')
-          .insert({ user_id: userId, balance: amount })
+          .insert({ user_id: selectedPayment.user_id, balance: selectedPayment.amount })
 
         if (insertError) throw insertError
       }
@@ -109,6 +129,8 @@ export default function Payments() {
         description: "Payment approved and balance updated.",
       })
 
+      setDialogOpen(false)
+      setSelectedPayment(null)
       fetchPayments()
     } catch (error) {
       console.error('Error approving payment:', error)
@@ -199,6 +221,7 @@ export default function Payments() {
               <TableRow>
                 <TableHead>User Email</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Fee</TableHead>
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>Note</TableHead>
                 <TableHead>Status</TableHead>
@@ -211,6 +234,7 @@ export default function Payments() {
                 <TableRow key={payment.id}>
                   <TableCell className="font-medium">{payment.user_email}</TableCell>
                   <TableCell>${payment.amount.toFixed(2)}</TableCell>
+                  <TableCell>{payment.fee ? `$${payment.fee.toFixed(2)}` : '-'}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {payment.transaction_id.length > 20 
                       ? `${payment.transaction_id.substring(0, 20)}...` 
@@ -222,15 +246,71 @@ export default function Payments() {
                   <TableCell>
                     {payment.status === 'pending' && (
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => handleApprove(payment.id, payment.amount, payment.user_id)}
-                          className="bg-success text-success-foreground hover:bg-success/90"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Approve
-                        </Button>
+                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleApproveClick(payment)}
+                              className="bg-success text-success-foreground hover:bg-success/90"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Approve Payment</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label>Amount (Read-only)</Label>
+                                <Input 
+                                  value={`$${selectedPayment?.amount.toFixed(2) || ''}`} 
+                                  disabled 
+                                />
+                              </div>
+                              <div>
+                                <Label>Transaction ID</Label>
+                                <Input 
+                                  value={selectedPayment?.transaction_id || ''} 
+                                  disabled 
+                                />
+                              </div>
+                              <div>
+                                <Label>Note</Label>
+                                <Input 
+                                  value={selectedPayment?.note || ''} 
+                                  disabled 
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="fee">Fee (Optional)</Label>
+                                <Input
+                                  id="fee"
+                                  type="number"
+                                  placeholder="0.00"
+                                  value={fee}
+                                  onChange={(e) => setFee(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => setDialogOpen(false)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  onClick={handleConfirmApprove}
+                                  className="bg-success text-success-foreground hover:bg-success/90"
+                                >
+                                  Confirm Approve
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           size="sm"
                           variant="destructive"
@@ -240,6 +320,16 @@ export default function Payments() {
                           Reject
                         </Button>
                       </div>
+                    )}
+                    {payment.status === 'approved' && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleReject(payment.id)}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
                     )}
                   </TableCell>
                 </TableRow>
