@@ -112,7 +112,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
-              <p className="text-xs text-sidebar-foreground/60">{isAdmin ? 'Admin' : 'Customer'}</p>
+              <p className="text-xs text-sidebar-foreground/60">Balance: $5,247.82</p>
             </div>
           )}
         </div>

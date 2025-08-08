@@ -17,10 +17,10 @@ const spendData = [
 ]
 
 const transactions = [
-  { company: "Meta Platforms Inc.", date: "26 February", amount: "+$815.60", avatar: "M", bgColor: "bg-blue-500" },
-  { company: "Stripe Inc.", date: "24 February", amount: "+$782", avatar: "S", bgColor: "bg-purple-500" },
-  { company: "CJ Affiliate LLC", date: "24 February", amount: "+$460.75", avatar: "C", bgColor: "bg-teal-500" },
-  { company: "Google Ads", date: "23 February", amount: "+$923.40", avatar: "G", bgColor: "bg-orange-500" },
+  { company: "Google Ads Spending", date: "26 February", amount: "+$815.60", avatar: "G", bgColor: "bg-blue-500" },
+  { company: "Meta Spending", date: "24 February", amount: "+$782", avatar: "M", bgColor: "bg-purple-500" },
+  { company: "TikTok Spending", date: "24 February", amount: "+$460.75", avatar: "T", bgColor: "bg-teal-500" },
+  { company: "Other Spending", date: "23 February", amount: "+$923.40", avatar: "O", bgColor: "bg-orange-500" },
 ]
 
 const teamMembers = [
@@ -42,25 +42,25 @@ export default function Dashboard() {
       {/* Financial Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title="Income"
+          title="Total Transfer Amount"
           value="$128,504.67"
           icon={<DollarSign className="h-4 w-4 text-success" />}
           className="border-l-4 border-l-success"
         />
         <MetricCard
-          title="Owner's Compensation"
+          title="Total Top-up Amount"
           value="$34,547.29"
           icon={<Users className="h-4 w-4 text-primary" />}
           className="border-l-4 border-l-primary"
         />
         <MetricCard
-          title="Operating Expenses"
+          title="Account Created"
           value="$1,694,238.43"
           icon={<BarChart3 className="h-4 w-4 text-warning" />}
           className="border-l-4 border-l-warning"
         />
         <MetricCard
-          title="Profit"
+          title="Total Spending"
           value="$34,547.29"
           icon={<TrendingUp className="h-4 w-4 text-success" />}
           className="border-l-4 border-l-success"
