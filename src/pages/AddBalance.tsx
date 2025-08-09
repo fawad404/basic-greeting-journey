@@ -329,54 +329,65 @@ export default function AddBalance() {
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">DATE</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">AMOUNT</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TOTAL TOP-UP</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">FEE</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TRANSACTION HASH</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">STATUS</th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="border-b border-border/50 hover:bg-muted/20">
-                    <td className="py-4 px-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(payment.created_at).toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="py-4 px-2 font-medium">
-                      $${payment.amount.toFixed(2)} USDT
-                    </td>
-                    <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
-                    <td className="py-4 px-2">
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-primary hover:underline"
-                        onClick={() => window.open(`https://tronscan.org/#/transaction/${payment.transaction_id}`, '_blank')}
-                      >
-                        {payment.transaction_id.substring(0, 15)}...
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </Button>
-                    </td>
-                    <td className="py-4 px-2">
-                      <Badge 
-                        variant={payment.status === "approved" ? "default" : "secondary"}
-                        className={
-                          payment.status === "approved" 
-                            ? "bg-success text-success-foreground" 
-                            : payment.status === "pending"
-                            ? "bg-warning text-warning-foreground"
-                            : payment.status === "rejected"
-                            ? "bg-destructive text-destructive-foreground"
-                            : ""
-                        }
-                      >
-                        {payment.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {payment.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
-                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {payments.map((payment) => {
+                  // Calculate total transfer amount for display
+                  const topUpAmount = payment.amount || 0; // This will be the admin-entered top-up amount after approval
+                  const feeAmount = payment.fee || 0;
+                  const totalTransferAmount = topUpAmount + feeAmount;
+                  
+                  return (
+                    <tr key={payment.id} className="border-b border-border/50 hover:bg-muted/20">
+                      <td className="py-4 px-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {new Date(payment.created_at).toLocaleString()}
+                        </div>
+                      </td>
+                      <td className="py-4 px-2 font-medium">
+                        ${totalTransferAmount.toFixed(2)} USDT
+                      </td>
+                      <td className="py-4 px-2 font-medium text-success">
+                        {payment.status === 'approved' ? `$${topUpAmount.toFixed(2)} USDT` : '-'}
+                      </td>
+                      <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee.toFixed(2)} USDT` : '-'}</td>
+                      <td className="py-4 px-2">
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-primary hover:underline"
+                          onClick={() => window.open(`https://tronscan.org/#/transaction/${payment.transaction_id}`, '_blank')}
+                        >
+                          {payment.transaction_id.substring(0, 15)}...
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </Button>
+                      </td>
+                      <td className="py-4 px-2">
+                        <Badge 
+                          variant={payment.status === "approved" ? "default" : "secondary"}
+                          className={
+                            payment.status === "approved" 
+                              ? "bg-success text-success-foreground" 
+                              : payment.status === "pending"
+                              ? "bg-warning text-warning-foreground"
+                              : payment.status === "rejected"
+                              ? "bg-destructive text-destructive-foreground"
+                              : ""
+                          }
+                        >
+                          {payment.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {payment.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                          {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
