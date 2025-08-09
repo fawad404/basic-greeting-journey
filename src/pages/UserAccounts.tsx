@@ -183,11 +183,14 @@ export default function UserAccounts() {
     setIsDialogOpen(true)
   }
 
-  const handleDialogClose = (open: boolean) => {
-    setIsDialogOpen(open)
-    if (!open) {
-      resetForm()
-    }
+  const handleDialogClose = () => {
+    setIsDialogOpen(false)
+    resetForm()
+  }
+
+  const handleAddNew = () => {
+    resetForm()
+    setIsDialogOpen(true)
   }
 
   // Early returns after all hooks are declared
@@ -227,13 +230,11 @@ export default function UserAccounts() {
           <p className="text-muted-foreground">Manage ad accounts for users</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Account
-            </Button>
-          </DialogTrigger>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Button onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Account
+          </Button>
           <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-background border border-border z-50">
             <DialogHeader>
               <DialogTitle>
@@ -366,7 +367,7 @@ export default function UserAccounts() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => handleDialogClose(false)}>
+                <Button type="button" variant="outline" onClick={handleDialogClose}>
                   Cancel
                 </Button>
                 <Button type="submit">
