@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
-import { Pencil, Plus, Search } from "lucide-react"
+import { Pencil, Plus, Search, Filter } from "lucide-react"
 
 interface User {
   id: string;
@@ -45,6 +45,8 @@ export default function UserAccounts() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
@@ -57,6 +59,21 @@ export default function UserAccounts() {
     access_email: '',
     timezone: 'UTC'
   })
+
+  // Filtered accounts based on search and status filter
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      const matchesSearch = searchTerm === '' || 
+        account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.account_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (account.users?.email && account.users.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        account.access_email.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || account.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [accounts, searchTerm, statusFilter])
 
   useEffect(() => {
     if (!authLoading && isAdmin) {
@@ -532,9 +549,39 @@ export default function UserAccounts() {
         </Dialog>
       </div>
 
+      {/* Search and Filter Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search by account name, account ID, user email, or access email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'suspended') => setStatusFilter(value)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>All Ad Accounts ({accounts.length})</CardTitle>
+          <CardTitle>All Ad Accounts ({filteredAccounts.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -551,7 +598,7 @@ export default function UserAccounts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {accounts.map((account) => (
+              {filteredAccounts.map((account) => (
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">{account.account_name}</TableCell>
                   <TableCell>{account.account_id}</TableCell>
@@ -575,10 +622,10 @@ export default function UserAccounts() {
                   </TableCell>
                 </TableRow>
               ))}
-              {accounts.length === 0 && (
+              {filteredAccounts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    No ad accounts found
+                    {searchTerm || statusFilter !== 'all' ? 'No accounts match your search criteria' : 'No ad accounts found'}
                   </TableCell>
                 </TableRow>
               )}
