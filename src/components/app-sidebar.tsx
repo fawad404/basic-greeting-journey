@@ -31,6 +31,9 @@ import { Button } from "@/components/ui/button"
 const baseNavigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Tickets", url: "/tickets", icon: Ticket },
+]
+
+const customerNavigationItems = [
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
 ]
 
@@ -56,7 +59,7 @@ export function AppSidebar() {
   
   const navigationItems = isAdmin
     ? [...baseNavigationItems, ...adminNavigationItems]
-    : [...baseNavigationItems, ...userOnlyNavigationItems]
+    : [...baseNavigationItems, ...customerNavigationItems, ...userOnlyNavigationItems]
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -75,11 +78,11 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
-            GA
+            AG
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sidebar-foreground">GoAds</span>
+              <span className="font-semibold text-sidebar-foreground">Ads Gorilla</span>
               <span className="text-xs text-sidebar-foreground/60">Customer Panel</span>
             </div>
           )}
