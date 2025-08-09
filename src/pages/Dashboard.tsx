@@ -3,21 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2, CalendarIcon } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { useState, useEffect } from "react"
-
-const spendData = [
-  { name: "Mon", value: 8500 },
-  { name: "Tue", value: 7200 },
-  { name: "Wed", value: 6800 },
-  { name: "Thu", value: 9100 },
-  { name: "Fri", value: 8900 },
-  { name: "Sat", value: 7600 },
-  { name: "Sun", value: 8200 },
-]
+import { format, subMonths, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, parseISO } from "date-fns"
 
 const transactions = [
   { company: "Google Ads Spending", date: "26 February", amount: "+$815.60", avatar: "G", bgColor: "bg-blue-500" },
@@ -36,6 +30,11 @@ const teamMembers = [
 export default function Dashboard() {
   const { user, isAdmin } = useAuth()
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true)
+  const [dateFilter, setDateFilter] = useState("thismonth")
+  const [customStartDate, setCustomStartDate] = useState<Date>()
+  const [customEndDate, setCustomEndDate] = useState<Date>()
+  const [spendChartData, setSpendChartData] = useState([])
+  
   const [metrics, setMetrics] = useState({
     totalTransferAmount: 0,
     totalTopupAmount: 0,
@@ -50,6 +49,64 @@ export default function Dashboard() {
     totalServiceFees: 0
   })
 
+  const getDateRange = () => {
+    const now = new Date()
+    let startDate: Date
+    let endDate: Date
+
+    switch (dateFilter) {
+      case "thismonth":
+        startDate = startOfMonth(now)
+        endDate = endOfMonth(now)
+        break
+      case "2months":
+        startDate = startOfMonth(subMonths(now, 1))
+        endDate = endOfMonth(now)
+        break
+      case "1year":
+        startDate = startOfYear(now)
+        endDate = endOfYear(now)
+        break
+      case "custom":
+        startDate = customStartDate || startOfMonth(now)
+        endDate = customEndDate || endOfMonth(now)
+        break
+      default:
+        startDate = startOfMonth(now)
+        endDate = endOfMonth(now)
+    }
+
+    return { startDate, endDate }
+  }
+
+  const generateChartData = (payments: any[]) => {
+    const { startDate, endDate } = getDateRange()
+    const topupPayments = payments.filter(p => p.transaction_id.startsWith('TOPUP-'))
+    
+    // Group payments by date
+    const dailySpending: { [key: string]: number } = {}
+    
+    topupPayments.forEach(payment => {
+      const paymentDate = format(parseISO(payment.created_at), 'yyyy-MM-dd')
+      if (!dailySpending[paymentDate]) {
+        dailySpending[paymentDate] = 0
+      }
+      dailySpending[paymentDate] += payment.amount
+    })
+
+    // Generate chart data based on date range
+    const days = eachDayOfInterval({ start: startDate, end: endDate })
+    const chartData = days.slice(-7).map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return {
+        name: format(date, 'EEE'),
+        value: dailySpending[dateStr] || 0
+      }
+    })
+
+    return chartData
+  }
+
   useEffect(() => {
     const fetchMetrics = async () => {
       if (!user) return
@@ -57,6 +114,8 @@ export default function Dashboard() {
       setIsLoadingMetrics(true)
 
       try {
+        const { startDate, endDate } = getDateRange()
+        
         const { data: userData } = await supabase
           .from('users')
           .select('id, created_at')
@@ -64,12 +123,14 @@ export default function Dashboard() {
           .single()
 
         if (userData) {
-          // Get all payments for this user
+          // Get all payments for this user within date range
           const { data: payments } = await supabase
             .from('payments')
             .select('*')
             .eq('user_id', userData.id)
             .eq('status', 'approved')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
 
           // Get account count for this user
           const { data: adAccounts } = await supabase
@@ -83,20 +144,22 @@ export default function Dashboard() {
           if (payments) {
             payments.forEach(payment => {
               if (payment.transaction_id.startsWith('TOPUP-')) {
-                // Sum all top-up amounts
                 totalTopupAmount += payment.amount
               } else {
-                // Sum all deposit amounts (crypto deposits)
                 totalTransferAmount += payment.amount
               }
             })
+
+            // Generate chart data
+            const chartData = generateChartData(payments)
+            setSpendChartData(chartData)
           }
 
           setMetrics({
             totalTransferAmount,
             totalTopupAmount,
             accountCount: adAccounts ? adAccounts.length : 0,
-            totalSpending: totalTopupAmount // Total spending equals total top-ups
+            totalSpending: totalTopupAmount
           })
         }
       } catch (error) {
@@ -112,16 +175,20 @@ export default function Dashboard() {
       setIsLoadingMetrics(true)
 
       try {
+        const { startDate, endDate } = getDateRange()
+
         // Get total number of user accounts
         const { data: totalUsers } = await supabase
           .from('users')
           .select('id')
 
-        // Get all approved payments
+        // Get all approved payments within date range
         const { data: allPayments } = await supabase
           .from('payments')
           .select('*')
           .eq('status', 'approved')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
 
         // Get suspended ad accounts
         const { data: suspendedAccounts } = await supabase
@@ -136,17 +203,18 @@ export default function Dashboard() {
         if (allPayments) {
           allPayments.forEach(payment => {
             if (payment.transaction_id.startsWith('TOPUP-')) {
-              // Sum all top-up amounts (spending)
               totalSpending += payment.amount
             } else {
-              // Sum all crypto deposit amounts
               totalTopupAmount += payment.amount
             }
-            // Sum all fees
             if (payment.fee) {
               totalServiceFees += payment.fee
             }
           })
+
+          // Generate chart data
+          const chartData = generateChartData(allPayments)
+          setSpendChartData(chartData)
         }
 
         setAdminMetrics({
@@ -168,14 +236,71 @@ export default function Dashboard() {
     } else if (user && isAdmin) {
       fetchAdminMetrics()
     }
-  }, [user, isAdmin])
+  }, [user, isAdmin, dateFilter, customStartDate, customEndDate])
+
+  const currentTotalSpending = isAdmin ? adminMetrics.totalSpending : metrics.totalSpending
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Financial Dashboard</h1>
-        <p className="text-muted-foreground">Manage your finances seamlessly across all your entities.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Financial Dashboard</h1>
+          <p className="text-muted-foreground">Manage your finances seamlessly across all your entities.</p>
+        </div>
+        
+        {/* Date Filter */}
+        <div className="flex gap-2">
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select time period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="thismonth">This month</SelectItem>
+              <SelectItem value="2months">2 months</SelectItem>
+              <SelectItem value="1year">1 year</SelectItem>
+              <SelectItem value="custom">Select date</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {dateFilter === "custom" && (
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-[120px] justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStartDate ? format(customStartDate, "PP") : <span>Start date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={setCustomStartDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-[120px] justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEndDate ? format(customEndDate, "PP") : <span>End date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={setCustomEndDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Financial Metrics */}
@@ -262,7 +387,7 @@ export default function Dashboard() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Total spend</CardTitle>
-            <div className="text-3xl font-bold">$68,026.43</div>
+            <div className="text-3xl font-bold">${currentTotalSpending.toFixed(2)}</div>
             <div className="flex gap-4 text-sm text-muted-foreground">
               <span>Payment methods</span>
               <span>Card merchants</span>
@@ -273,7 +398,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={spendData}>
+                <BarChart data={spendChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis 
                     dataKey="name" 
