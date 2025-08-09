@@ -41,19 +41,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
         let calculatedBalance = 0
         if (payments) {
-          // First calculate total from all approved top-ups (what admin entered as top-up amount)
-          const approvedTopUps = payments.filter(p => 
-            p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
-          )
-          const topUpBalance = approvedTopUps.reduce((sum, payment) => sum + payment.amount, 0)
-          
-          // Then subtract pending top-ups (original request amounts)
-          const pendingTopUps = payments.filter(p => 
-            p.transaction_id.startsWith('TOPUP-') && p.status === 'pending'
-          )
-          const pendingAmount = pendingTopUps.reduce((sum, payment) => sum + payment.amount, 0)
-          
-          // Add crypto deposits
+          // Add crypto deposits (admin-entered top-up amounts)
           const cryptoDeposits = payments.filter(p => 
             !p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
           )
@@ -62,7 +50,16 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
             return sum + payment.amount
           }, 0)
           
-          calculatedBalance = topUpBalance + cryptoBalance - pendingAmount
+          // Subtract pending top-ups (amounts deducted from balance when request was made)
+          const pendingTopUps = payments.filter(p => 
+            p.transaction_id.startsWith('TOPUP-') && p.status === 'pending'
+          )
+          const pendingAmount = pendingTopUps.reduce((sum, payment) => sum + payment.amount, 0)
+          
+          // Note: Approved top-ups don't add to balance - they just remove the pending deduction
+          // The user's balance was already reduced when they made the top-up request
+          
+          calculatedBalance = cryptoBalance - pendingAmount
         }
         
         setBalance(calculatedBalance)
