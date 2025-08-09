@@ -30,7 +30,7 @@ export default function UsersManagement() {
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'customer'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'customer'>('customer');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     email: '',
