@@ -30,6 +30,7 @@ interface AdAccount {
 }
 
 export default function AdAccounts() {
+  console.log('AdAccounts component loaded - version 2.0')
   const { toast } = useToast()
   const { user } = useAuth()
   
