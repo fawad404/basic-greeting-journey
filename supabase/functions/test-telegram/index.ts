@@ -1,0 +1,123 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function sendTelegramMessage(message: string): Promise<boolean> {
+  const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
+  const ADMIN_CHAT_ID = '7610098144'
+  
+  console.log('=== Testing Telegram Bot ===')
+  console.log('Bot Token exists:', !!TELEGRAM_BOT_TOKEN)
+  console.log('Admin Chat ID:', ADMIN_CHAT_ID)
+  
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error('TELEGRAM_BOT_TOKEN not found in environment variables')
+    return false
+  }
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+  console.log('Telegram API URL:', url)
+  
+  try {
+    const payload = {
+      chat_id: ADMIN_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML',
+    }
+    console.log('Sending payload:', payload)
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    console.log('Response status:', response.status)
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+    
+    const responseText = await response.text()
+    console.log('Response body:', responseText)
+
+    if (!response.ok) {
+      console.error('Telegram API error:', response.status, responseText)
+      return false
+    }
+
+    console.log('✅ Telegram notification sent successfully')
+    return true
+  } catch (error) {
+    console.error('❌ Error sending Telegram notification:', error)
+    return false
+  }
+}
+
+Deno.serve(async (req) => {
+  console.log('=== Test Telegram Function Called ===')
+  
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const testMessage = `🧪 <b>Test Message</b>
+
+This is a test notification from your payment system bot.
+
+🔔 <b>New Top-Up Request</b>
+
+👤 <b>User:</b> test@example.com
+💰 <b>Amount:</b> $100.00
+🔗 <b>Transaction ID:</b> TOPUP-${Date.now()}-TEST123
+📝 <b>Note:</b> This is a test top-up request
+
+⏰ <b>Time:</b> ${new Date().toLocaleString()}
+
+✅ <b>Status:</b> Bot is working correctly!
+
+Please review and approve/reject this request in the admin panel.`
+
+    console.log('Sending test message...')
+    const success = await sendTelegramMessage(testMessage)
+
+    if (success) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Test notification sent successfully to Telegram!',
+          chatId: '7610098144'
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    } else {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send test notification',
+          details: 'Check the function logs for more details'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+  } catch (error) {
+    console.error('❌ Error in test-telegram function:', error)
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  }
+})
