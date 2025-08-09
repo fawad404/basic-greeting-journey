@@ -66,17 +66,33 @@ export default function UserAccounts() {
     try {
       console.log('Fetching users and accounts...')
       
-      // Fetch only customer users with role information
+      // First fetch all user roles to get customer user IDs
+      const { data: userRolesData, error: userRolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'customer')
+
+      if (userRolesError) {
+        console.error('Error fetching user roles:', userRolesError)
+        throw userRolesError
+      }
+
+      const customerUserIds = userRolesData?.map(ur => ur.user_id) || []
+
+      if (customerUserIds.length === 0) {
+        console.log('No customer users found')
+        setUsers([])
+        setFilteredUsers([])
+        setAccounts([])
+        setLoading(false)
+        return
+      }
+
+      // Fetch only customer users
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select(`
-          id, 
-          email, 
-          username, 
-          telegram_username,
-          user_roles!inner(role)
-        `)
-        .eq('user_roles.role', 'customer')
+        .select('id, email, username, telegram_username')
+        .in('id', customerUserIds)
         .order('email')
 
       if (usersError) {
