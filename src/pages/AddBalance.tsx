@@ -89,6 +89,7 @@ export default function AddBalance() {
           .from('payments')
           .select('*')
           .eq('user_id', userData.id)
+          .not('transaction_id', 'like', 'TOPUP-%')
           .order('created_at', { ascending: false })
 
         setPayments(data || [])
