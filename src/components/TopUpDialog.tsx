@@ -79,6 +79,7 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
       if (userData) {
         // Store the current balance before deduction (this will be the "Total Transfer Amount")
         const currentBalance = userBalance
+        const transactionId = `TOPUP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         
         // Create a top-up request entry in payments table with a special type
         const { error } = await supabase
@@ -86,13 +87,28 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
           .insert({
             user_id: userData.id,
             amount: topUpAmount,
-            transaction_id: `TOPUP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            transaction_id: transactionId,
             note: note || `Top-up request for ${accountName || 'account'}${accountId ? ` (ID: ${accountId})` : ''}`,
             status: 'pending',
             user_balance_at_time: currentBalance
           })
 
         if (error) throw error
+
+        // Send Telegram notification to admin
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              userEmail: user.email,
+              amount: topUpAmount,
+              transactionId: transactionId,
+              note: note || `Top-up request for ${accountName || 'account'}${accountId ? ` (ID: ${accountId})` : ''}`
+            }
+          });
+        } catch (telegramError) {
+          console.error('Error sending Telegram notification:', telegramError);
+          // Don't fail the whole operation if Telegram fails
+        }
 
         toast({
           title: "Top-up Request Submitted",
