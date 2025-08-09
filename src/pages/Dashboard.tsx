@@ -456,6 +456,8 @@ export default function Dashboard() {
                     dataKey="value" 
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
+                    maxBarSize={40}
+                    minPointSize={5}
                   />
                 </BarChart>
               </ResponsiveContainer>
