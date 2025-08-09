@@ -77,14 +77,24 @@ export function AppSidebar() {
             const calculatedBalance = payments.reduce((sum, payment) => {
               const fee = payment.fee || 0
               if (payment.transaction_id.startsWith('TOPUP-')) {
-                // For top-ups, deduct from balance
-                return sum - payment.amount
+                // For approved top-ups, add back the amount minus fee
+                return sum + (payment.amount - fee)
               } else {
                 // For crypto deposits, add to balance minus fee
                 return sum + (payment.amount - fee)
               }
             }, 0)
-            setUserBalance(calculatedBalance)
+            
+            // Also subtract pending top-ups from balance
+            const { data: pendingTopups } = await supabase
+              .from('payments')
+              .select('amount')
+              .eq('user_id', userData.id)
+              .eq('status', 'pending')
+              .like('transaction_id', 'TOPUP-%')
+            
+            const pendingDeductions = (pendingTopups || []).reduce((sum, topup) => sum + topup.amount, 0)
+            setUserBalance(calculatedBalance - pendingDeductions)
           }
         }
       } catch (error) {

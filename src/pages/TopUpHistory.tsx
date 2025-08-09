@@ -15,6 +15,8 @@ interface TopUpRequest {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   updated_at: string
+  fee?: number
+  user_balance_at_time?: number
 }
 
 export default function TopUpHistory() {
@@ -151,7 +153,9 @@ export default function TopUpHistory() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
+                  <TableHead>Top-up Amount</TableHead>
+                  <TableHead>Total Transfer Amount</TableHead>
+                  <TableHead>Fee</TableHead>
                   <TableHead>Request ID</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead>Status</TableHead>
@@ -165,7 +169,13 @@ export default function TopUpHistory() {
                       {new Date(request.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="font-medium">
-                      ${request.amount.toFixed(2)}
+                      ${request.status === 'approved' ? (request.amount - (request.fee || 0)).toFixed(2) : request.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      ${(request as any).user_balance_at_time ? ((request as any).user_balance_at_time).toFixed(2) : '-'}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      ${request.fee ? request.fee.toFixed(2) : (request.status === 'approved' ? '0.00' : '-')}
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {request.transaction_id}
