@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -16,7 +16,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchUserBalance = async () => {
+  const fetchUserBalance = useCallback(async () => {
     if (!user) {
       setBalance(null)
       setIsLoading(false)
@@ -71,7 +71,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   const updateBalanceAfterTopUp = (amount: number) => {
     if (balance !== null) {
@@ -81,11 +81,11 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchUserBalance()
-  }, [user])
+  }, [fetchUserBalance])
 
-  const refreshBalance = async () => {
+  const refreshBalance = useCallback(async () => {
     await fetchUserBalance()
-  }
+  }, [fetchUserBalance])
 
   return (
     <BalanceContext.Provider value={{
