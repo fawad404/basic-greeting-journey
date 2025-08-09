@@ -9,6 +9,7 @@ import { CheckCircle, XCircle, Clock, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TestTelegramButton } from "@/components/TestTelegramButton"
 import { SetupTelegramWebhookButton } from "@/components/SetupTelegramWebhookButton"
+import { DeleteTelegramWebhookButton } from "@/components/DeleteTelegramWebhookButton"
 
 // Function to update Telegram message when status changes
 const updateTelegramMessage = async (transactionId: string, status: 'approved' | 'rejected', userEmail: string, amount: number) => {
@@ -187,6 +188,7 @@ export default function TopUpRequests() {
         </div>
         <div className="flex gap-2">
           <SetupTelegramWebhookButton />
+          <DeleteTelegramWebhookButton />
           <TestTelegramButton />
         </div>
       </div>

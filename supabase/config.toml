@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.update-telegram-message]
 verify_jwt = false
+
+[functions.delete-telegram-webhook]
+verify_jwt = false
