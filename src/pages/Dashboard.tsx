@@ -106,26 +106,18 @@ export default function Dashboard() {
       dailySpending[paymentDate] += payment.amount
     })
 
-    // Only return data for days that have actual spending
-    const chartData = Object.entries(dailySpending).map(([dateStr, amount]) => ({
-      name: format(parseISO(dateStr), 'EEE'),
-      value: amount,
-      date: dateStr
-    }))
-
-    // Sort by date
-    chartData.sort((a, b) => a.date.localeCompare(b.date))
-
-    // If no data, show last 7 days of the date range with 0 values for proper week display
-    if (chartData.length === 0) {
-      const days = eachDayOfInterval({ start: startDate, end: endDate })
-      const lastSevenDays = days.slice(-7)
-      return lastSevenDays.map(date => ({
-        name: format(date, 'EEE'),
-        value: 0,
-        date: format(date, 'yyyy-MM-dd')
-      }))
-    }
+    // Generate all days in the date range
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate })
+    
+    // Create chart data for all days, with spending data where available
+    const chartData = allDays.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      return {
+        name: format(date, 'dd'),
+        value: dailySpending[dateStr] || 0,
+        date: dateStr
+      }
+    })
 
     return chartData
   }
@@ -456,8 +448,8 @@ export default function Dashboard() {
                     dataKey="value" 
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                    minPointSize={5}
+                    maxBarSize={15}
+                    minPointSize={2}
                   />
                 </BarChart>
               </ResponsiveContainer>
