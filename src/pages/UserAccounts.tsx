@@ -52,7 +52,7 @@ export default function UserAccounts() {
     account_name: '',
     account_id: '',
     status: 'active',
-    budget: 0,
+    total_topup: 0,
     access_email: '',
     timezone: 'UTC'
   })
@@ -182,7 +182,7 @@ export default function UserAccounts() {
       account_name: '',
       account_id: '',
       status: 'active',
-      budget: 0,
+      total_topup: 0,
       access_email: '',
       timezone: 'UTC'
     })
@@ -197,9 +197,14 @@ export default function UserAccounts() {
     try {
       if (editingAccount) {
         // Update existing account
+        const updateData = {
+          ...formData,
+          total_topup_amount: formData.total_topup
+        }
+        
         const { error } = await supabase
           .from('ad_accounts')
-          .update(formData)
+          .update(updateData)
           .eq('id', editingAccount.id)
 
         if (error) throw error
@@ -210,15 +215,57 @@ export default function UserAccounts() {
         })
       } else {
         // Create new account
-        const { error } = await supabase
+        const insertData = {
+          ...formData,
+          total_topup_amount: formData.total_topup
+        }
+        
+        const { error: insertError } = await supabase
           .from('ad_accounts')
-          .insert([formData])
+          .insert([insertData])
 
-        if (error) throw error
+        if (insertError) throw insertError
+
+        // Handle user balance update if total_topup > 0
+        if (formData.total_topup > 0) {
+          // Check if user already has a balance record
+          const { data: existingBalance, error: balanceCheckError } = await supabase
+            .from('user_balances')
+            .select('*')
+            .eq('user_id', formData.user_id)
+            .single()
+
+          if (balanceCheckError && balanceCheckError.code !== 'PGRST116') {
+            throw balanceCheckError
+          }
+
+          if (existingBalance) {
+            // User has existing balance - add to it
+            const { error: updateBalanceError } = await supabase
+              .from('user_balances')
+              .update({ 
+                balance: existingBalance.balance + formData.total_topup,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', formData.user_id)
+
+            if (updateBalanceError) throw updateBalanceError
+          } else {
+            // New user - create initial balance
+            const { error: createBalanceError } = await supabase
+              .from('user_balances')
+              .insert([{
+                user_id: formData.user_id,
+                balance: formData.total_topup
+              }])
+
+            if (createBalanceError) throw createBalanceError
+          }
+        }
 
         toast({
           title: "Success", 
-          description: "Ad account created successfully"
+          description: "Ad account created successfully and user balance updated"
         })
       }
 
@@ -242,7 +289,7 @@ export default function UserAccounts() {
       account_name: account.account_name,
       account_id: account.account_id,
       status: account.status as 'active' | 'suspended',
-      budget: account.budget,
+      total_topup: account.total_topup_amount,
       access_email: account.access_email,
       timezone: account.timezone
     })
@@ -409,13 +456,13 @@ export default function UserAccounts() {
               </div>
 
               <div>
-                <Label htmlFor="budget">Budget</Label>
+                <Label htmlFor="total_topup">Total Top-up</Label>
                 <Input
-                  id="budget"
+                  id="total_topup"
                   type="number"
                   step="0.01"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
+                  value={formData.total_topup}
+                  onChange={(e) => setFormData({ ...formData, total_topup: parseFloat(e.target.value) || 0 })}
                   placeholder="500.00"
                 />
               </div>
@@ -471,7 +518,7 @@ export default function UserAccounts() {
                 <TableHead>Account ID</TableHead>
                 <TableHead>User Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Budget</TableHead>
+                <TableHead>Total Top-up</TableHead>
                 <TableHead>Access Email</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead>Actions</TableHead>
@@ -488,7 +535,7 @@ export default function UserAccounts() {
                       {account.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>${account.budget.toFixed(2)}</TableCell>
+                  <TableCell>${account.total_topup_amount.toFixed(2)}</TableCell>
                   <TableCell>{account.access_email}</TableCell>
                   <TableCell>{new Date(account.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
