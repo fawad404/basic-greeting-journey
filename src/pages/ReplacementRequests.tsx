@@ -146,14 +146,6 @@ export default function ReplacementRequests() {
     }
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Access denied. Admin privileges required.</p>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -161,6 +153,14 @@ export default function ReplacementRequests() {
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading replacement requests...</span>
         </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Access denied. Admin privileges required.</p>
       </div>
     )
   }
