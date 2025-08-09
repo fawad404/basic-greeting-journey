@@ -78,7 +78,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden">
-            <img src="https://res.cloudinary.com/djecn7fxz/image/upload/v1754754443/Gorilla_Ads_2_adx57y.ai" alt="Ads Gorilla" className="w-full h-full object-cover" />
+            <img src="https://res.cloudinary.com/djecn7fxz/image/upload/v1754754707/Gorilla_Ads_2_shmbph.png" alt="Ads Gorilla" className="w-full h-full object-cover" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
