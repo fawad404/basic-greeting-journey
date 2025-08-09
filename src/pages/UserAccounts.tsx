@@ -91,6 +91,8 @@ export default function UserAccounts() {
 
       console.log('Fetched users:', usersData)
       console.log('Fetched accounts:', accountsData)
+      console.log('Current user is admin:', isAdmin)
+      console.log('Auth loading state:', authLoading)
       
       setUsers(usersData || [])
       setAccounts((accountsData as any) || [])
@@ -225,12 +227,17 @@ export default function UserAccounts() {
         
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button 
+              onClick={() => {
+                console.log('Add New Account button clicked')
+                setIsDialogOpen(true)
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add New Account
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-background border border-border z-50">
             <DialogHeader>
               <DialogTitle>
                 {editingAccount ? 'Edit Ad Account' : 'Add New Ad Account'}
@@ -247,9 +254,13 @@ export default function UserAccounts() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select a user..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border z-50">
                     {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
+                      <SelectItem 
+                        key={user.id} 
+                        value={user.id}
+                        className="bg-background hover:bg-accent focus:bg-accent"
+                      >
                         {user.email}
                       </SelectItem>
                     ))}
@@ -332,11 +343,11 @@ export default function UserAccounts() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="CAD">CAD</SelectItem>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="USD" className="bg-background hover:bg-accent focus:bg-accent">USD</SelectItem>
+                    <SelectItem value="EUR" className="bg-background hover:bg-accent focus:bg-accent">EUR</SelectItem>
+                    <SelectItem value="GBP" className="bg-background hover:bg-accent focus:bg-accent">GBP</SelectItem>
+                    <SelectItem value="CAD" className="bg-background hover:bg-accent focus:bg-accent">CAD</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -350,9 +361,9 @@ export default function UserAccounts() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="active" className="bg-background hover:bg-accent focus:bg-accent">Active</SelectItem>
+                    <SelectItem value="suspended" className="bg-background hover:bg-accent focus:bg-accent">Suspended</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
