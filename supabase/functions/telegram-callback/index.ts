@@ -27,33 +27,22 @@ Deno.serve(async (req) => {
       return new Response('Bot token not found', { status: 500 })
     }
 
-    // Handle callback query
+    // Handle callback query - now only for legacy support
     if (body.callback_query) {
       const callbackData = body.callback_query.data
-      const chatId = body.callback_query.message.chat.id
-      const messageId = body.callback_query.message.message_id
       
-      console.log('Callback data:', callbackData)
+      console.log('Callback data received (legacy):', callbackData)
       
-      if (callbackData.startsWith('view_')) {
-        const transactionId = callbackData.substring(5) // Remove 'view_' prefix
-        
-        console.log(`Handling view request for transaction:`, transactionId)
-        
-        // Send response to user and redirect to specific top-up request
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            callback_query_id: body.callback_query.id,
-            text: "Opening top-up request...",
-            show_alert: false,
-            url: `https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests?transaction=${transactionId}`
-          })
+      // Just acknowledge the callback since we're using direct URLs now
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callback_query_id: body.callback_query.id,
+          text: "Please use the admin panel for actions.",
+          show_alert: false
         })
-        
-        console.log(`✅ Redirected to view transaction ${transactionId}`)
-      }
+      })
     }
 
     return new Response('OK', { 

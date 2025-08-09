@@ -57,7 +57,7 @@ function createInlineKeyboard(transactionId: string) {
       [
         {
           text: "👁️ View Request",
-          callback_data: `view_${transactionId}`
+          url: `https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests?transaction=${transactionId}`
         }
       ]
     ]

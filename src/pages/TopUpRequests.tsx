@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -47,6 +48,8 @@ export default function TopUpRequests() {
   const [requests, setRequests] = useState<TopUpRequest[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  const highlightTransactionId = searchParams.get('transaction')
 
   const fetchRequests = async () => {
     try {
@@ -213,11 +216,19 @@ export default function TopUpRequests() {
             </TableHeader>
             <TableBody>
               {requests.map((request) => (
-                <TableRow key={request.id}>
+                <TableRow 
+                  key={request.id} 
+                  className={highlightTransactionId === request.transaction_id ? "bg-primary/10 border-primary" : ""}
+                >
                   <TableCell>
                     <div>
                       <div className="font-medium">{request.user_email}</div>
                       <div className="text-xs text-muted-foreground">ID: {request.user_id.substring(0, 8)}...</div>
+                      {highlightTransactionId === request.transaction_id && (
+                        <Badge variant="outline" className="mt-1 text-xs bg-primary/10 text-primary border-primary">
+                          📍 From Telegram
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-lg">${request.amount.toFixed(2)}</TableCell>
