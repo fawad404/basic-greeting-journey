@@ -53,6 +53,8 @@ export default function AdAccounts() {
     }
 
     try {
+      setLoading(true) // Ensure loading is true during fetch
+      
       const { data: userData } = await supabase
         .from('users')
         .select('id')

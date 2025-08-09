@@ -348,21 +348,55 @@ export default function Payments() {
                                   </p>
                                 </div>
                                 
-                                <div>
-                                  <Label htmlFor="fee">Fee Amount</Label>
-                                  <Input
-                                    id="fee"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.00"
-                                    value={fee}
-                                    onChange={(e) => setFee(e.target.value)}
-                                  />
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Admin fee deducted from deposit
-                                  </p>
-                                </div>
+                                 <div>
+                                   <Label htmlFor="fee">Fee Amount</Label>
+                                   <div className="flex gap-2 mb-2">
+                                     <Button
+                                       type="button"
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={() => {
+                                         if (selectedPayment) {
+                                           const feeAmount = (selectedPayment.amount * 0.10).toFixed(2)
+                                           const remainingAmount = (selectedPayment.amount - parseFloat(feeAmount)).toFixed(2)
+                                           setFee(feeAmount)
+                                           setTopUpAmount(remainingAmount)
+                                         }
+                                       }}
+                                       className="text-xs px-3 py-1 h-7"
+                                     >
+                                       10%
+                                     </Button>
+                                     <Button
+                                       type="button"
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={() => {
+                                         if (selectedPayment) {
+                                           const feeAmount = (selectedPayment.amount * 0.20).toFixed(2)
+                                           const remainingAmount = (selectedPayment.amount - parseFloat(feeAmount)).toFixed(2)
+                                           setFee(feeAmount)
+                                           setTopUpAmount(remainingAmount)
+                                         }
+                                       }}
+                                       className="text-xs px-3 py-1 h-7"
+                                     >
+                                       20%
+                                     </Button>
+                                   </div>
+                                   <Input
+                                     id="fee"
+                                     type="number"
+                                     step="0.01"
+                                     min="0"
+                                     placeholder="0.00"
+                                     value={fee}
+                                     onChange={(e) => setFee(e.target.value)}
+                                   />
+                                   <p className="text-xs text-muted-foreground mt-1">
+                                     Admin fee deducted from deposit
+                                   </p>
+                                 </div>
 
                                 {topUpAmount && fee && (
                                   <div className="mt-3 p-3 bg-background rounded border">
