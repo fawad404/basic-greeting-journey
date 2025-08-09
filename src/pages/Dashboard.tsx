@@ -434,8 +434,12 @@ export default function Dashboard() {
                     axisLine={false}
                     tickLine={false}
                     className="text-xs text-muted-foreground"
-                    domain={[0, 'dataMax']}
-                    tickFormatter={(value) => `$${(value / 1000000).toFixed(0)}M`}
+                    domain={[100, 100000000]}
+                    tickFormatter={(value) => {
+                      if (value >= 1000000) return `$${(value / 1000000).toFixed(0)}M`
+                      if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`
+                      return `$${value}`
+                    }}
                   />
                   <Bar 
                     dataKey="value" 
