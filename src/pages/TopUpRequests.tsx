@@ -69,6 +69,7 @@ export default function TopUpRequests() {
   }
 
   const handleApproval = async (request: TopUpRequest) => {
+    console.log('🔥 APPROVAL DEBUG: Starting approval for request:', request.id)
     try {
       const { error } = await supabase
         .from('payments')
@@ -80,12 +81,15 @@ export default function TopUpRequests() {
 
       if (error) throw error
 
+      console.log('🔥 APPROVAL DEBUG: Payment status updated successfully')
+
       toast({
         title: "Request Approved",
         description: `Top-up request approved successfully`,
       })
 
       fetchRequests()
+      console.log('🔥 APPROVAL DEBUG: fetchRequests() called')
     } catch (error) {
       console.error('Error approving request:', error)
       toast({
