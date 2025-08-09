@@ -313,38 +313,36 @@ export default function AdAccounts() {
                         Top-Up
                       </Button>
 
-                      {selectedAccount.status === 'suspended' && (
-                        <Dialog open={isReplaceOpen} onOpenChange={setIsReplaceOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" className="border-muted-foreground">
-                              Replace
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Request Account Replacement</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleReplaceSubmit} className="space-y-4">
-                              <div>
-                                <Label htmlFor="reason">Reason for Replacement</Label>
-                                <Textarea
-                                  id="reason"
-                                  value={replaceReason}
-                                  onChange={(e) => setReplaceReason(e.target.value)}
-                                  placeholder="Please explain why you need account replacement..."
-                                  required
-                                />
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <Button type="button" variant="outline" onClick={() => setIsReplaceOpen(false)}>
-                                  Cancel
-                                </Button>
-                                <Button type="submit">Submit Request</Button>
-                              </div>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
-                      )}
+                      <Dialog open={isReplaceOpen} onOpenChange={setIsReplaceOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="border-muted-foreground">
+                            Replace
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Request Account Replacement</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={handleReplaceSubmit} className="space-y-4">
+                            <div>
+                              <Label htmlFor="reason">Reason for Replacement</Label>
+                              <Textarea
+                                id="reason"
+                                value={replaceReason}
+                                onChange={(e) => setReplaceReason(e.target.value)}
+                                placeholder="Please explain why you need account replacement..."
+                                required
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button type="button" variant="outline" onClick={() => setIsReplaceOpen(false)}>
+                                Cancel
+                              </Button>
+                              <Button type="submit">Submit Request</Button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
 
                       <Button variant="outline" className="border-muted-foreground">
                         Change Access
