@@ -82,7 +82,7 @@ export default function AddBalance() {
         .from('users')
         .select('id')
         .eq('email', user.email)
-        .single()
+        .maybeSingle()
 
       if (userData) {
         const { data } = await supabase
@@ -134,9 +134,28 @@ export default function AddBalance() {
         .from('users')
         .select('id')
         .eq('email', user.email)
-        .single()
+        .maybeSingle()
 
       if (userData) {
+        // Get current user balance before adding this deposit
+        const { data: existingPayments } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('user_id', userData.id)
+          .eq('status', 'approved')
+
+        let currentBalance = 0
+        if (existingPayments) {
+          currentBalance = existingPayments.reduce((sum, payment) => {
+            const fee = payment.fee || 0
+            if (payment.transaction_id.startsWith('TOPUP-')) {
+              return sum - payment.amount - fee
+            } else {
+              return sum + (payment.amount - fee)
+            }
+          }, 0)
+        }
+
         const { error } = await supabase
           .from('payments')
           .insert({
@@ -144,6 +163,7 @@ export default function AddBalance() {
             amount: parseFloat(amount),
             transaction_id: txHash,
             note: notes || null,
+            user_balance_at_time: currentBalance
           })
 
         if (error) throw error
@@ -323,7 +343,9 @@ export default function AddBalance() {
                         {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
-                    <td className="py-4 px-2 font-medium">${totalTransferAmount.toFixed(2)} USDT</td>
+                    <td className="py-4 px-2 font-medium">
+                      ${(payment.user_balance_at_time || 0).toFixed(2)} USDT
+                    </td>
                     <td className="py-4 px-2 font-medium">
                       {payment.transaction_id.startsWith('TOPUP-') 
                         ? `$${(payment.amount - (payment.fee || 0)).toFixed(2)} USDT`
