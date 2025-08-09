@@ -183,9 +183,11 @@ export default function UserAccounts() {
     setIsDialogOpen(true)
   }
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false)
-    resetForm()
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open)
+    if (!open) {
+      resetForm()
+    }
   }
 
   // Early returns after all hooks are declared
@@ -227,12 +229,7 @@ export default function UserAccounts() {
         
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button 
-              onClick={() => {
-                console.log('Add New Account button clicked')
-                setIsDialogOpen(true)
-              }}
-            >
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add New Account
             </Button>
@@ -369,7 +366,7 @@ export default function UserAccounts() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={handleDialogClose}>
+                <Button type="button" variant="outline" onClick={() => handleDialogClose(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">
