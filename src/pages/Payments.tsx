@@ -27,6 +27,7 @@ export default function Payments() {
   const [loading, setLoading] = useState(true)
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [fee, setFee] = useState("")
+  const [topUpAmount, setTopUpAmount] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editAmount, setEditAmount] = useState("")
@@ -127,6 +128,7 @@ export default function Payments() {
   const handleApproveClick = (payment: Payment) => {
     setSelectedPayment(payment)
     setFee("")
+    setTopUpAmount("")
     setDialogOpen(true)
   }
 
@@ -134,20 +136,22 @@ export default function Payments() {
     if (!selectedPayment) return
 
     try {
-      const feeAmount = fee ? parseFloat(fee) : null
+      const feeAmount = fee ? parseFloat(fee) : 0
+      const topUpAmountValue = topUpAmount ? parseFloat(topUpAmount) : 0
 
-      // Update payment status and fee
+      // Update payment status, fee, and amount to reflect the actual top-up amount
       const { error: paymentError } = await supabase
         .from('payments')
         .update({ 
           status: 'approved',
-          fee: feeAmount
+          fee: feeAmount,
+          amount: topUpAmountValue // Update amount to be the top-up amount (what user gets)
         })
         .eq('id', selectedPayment.id)
 
       if (paymentError) throw paymentError
 
-      // Update or create user balance
+      // Update or create user balance with the top-up amount
       const { data: existingBalance, error: fetchError } = await supabase
         .from('user_balances')
         .select('*')
@@ -159,29 +163,33 @@ export default function Payments() {
       }
 
       if (existingBalance) {
-        // Update existing balance
+        // Update existing balance by adding the top-up amount
         const { error: updateError } = await supabase
           .from('user_balances')
-          .update({ balance: existingBalance.balance + selectedPayment.amount })
+          .update({ balance: existingBalance.balance + topUpAmountValue })
           .eq('user_id', selectedPayment.user_id)
 
         if (updateError) throw updateError
       } else {
-        // Create new balance record
+        // Create new balance record with the top-up amount
         const { error: insertError } = await supabase
           .from('user_balances')
-          .insert({ user_id: selectedPayment.user_id, balance: selectedPayment.amount })
+          .insert({ user_id: selectedPayment.user_id, balance: topUpAmountValue })
 
         if (insertError) throw insertError
       }
 
+      const totalTransferAmount = topUpAmountValue + feeAmount
+
       toast({
         title: "Payment Approved",
-        description: "Payment approved and balance updated.",
+        description: `Top-up of $${topUpAmountValue.toFixed(2)} approved (Total Transfer: $${totalTransferAmount.toFixed(2)}, Fee: $${feeAmount.toFixed(2)})`,
       })
 
       setDialogOpen(false)
       setSelectedPayment(null)
+      setFee("")
+      setTopUpAmount("")
       fetchPayments()
     } catch (error) {
       console.error('Error approving payment:', error)
@@ -322,11 +330,14 @@ export default function Payments() {
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
-                                <Label>Amount (Read-only)</Label>
+                                <Label>Original Deposit Amount (Read-only)</Label>
                                 <Input 
                                   value={`$${selectedPayment?.amount.toFixed(2) || ''}`} 
                                   disabled 
                                 />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Amount user originally deposited
+                                </p>
                               </div>
                               <div>
                                 <Label>Transaction ID</Label>
@@ -342,15 +353,60 @@ export default function Payments() {
                                   disabled 
                                 />
                               </div>
-                              <div>
-                                <Label htmlFor="fee">Fee (Optional)</Label>
-                                <Input
-                                  id="fee"
-                                  type="number"
-                                  placeholder="0.00"
-                                  value={fee}
-                                  onChange={(e) => setFee(e.target.value)}
-                                />
+                              
+                              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                                <h4 className="font-medium">Admin Payment Breakdown</h4>
+                                
+                                <div>
+                                  <Label htmlFor="topUpAmount">Total Top-up Amount</Label>
+                                  <Input
+                                    id="topUpAmount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={topUpAmount}
+                                    onChange={(e) => setTopUpAmount(e.target.value)}
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Amount to credit to user's balance
+                                  </p>
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="fee">Fee Amount</Label>
+                                  <Input
+                                    id="fee"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                    value={fee}
+                                    onChange={(e) => setFee(e.target.value)}
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Admin fee deducted from deposit
+                                  </p>
+                                </div>
+
+                                {topUpAmount && fee && (
+                                  <div className="mt-3 p-3 bg-background rounded border">
+                                    <div className="text-sm space-y-1">
+                                      <div className="flex justify-between">
+                                        <span>Total Transfer Amount:</span>
+                                        <span className="font-medium">${(parseFloat(topUpAmount) + parseFloat(fee)).toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>User Gets (Top-up):</span>
+                                        <span className="font-medium text-success">${parseFloat(topUpAmount).toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Admin Fee:</span>
+                                        <span className="font-medium">${parseFloat(fee).toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex gap-2 justify-end">
                                 <Button 
@@ -362,6 +418,7 @@ export default function Payments() {
                                 <Button 
                                   onClick={handleConfirmApprove}
                                   className="bg-success text-success-foreground hover:bg-success/90"
+                                  disabled={!topUpAmount || !fee}
                                 >
                                   Confirm Approve
                                 </Button>
