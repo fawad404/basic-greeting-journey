@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TestTelegramButton } from "@/components/TestTelegramButton"
+import { SetupTelegramWebhookButton } from "@/components/SetupTelegramWebhookButton"
 
 interface TopUpRequest {
   id: string
@@ -152,7 +153,10 @@ export default function TopUpRequests() {
           <h1 className="text-3xl font-bold text-foreground">Top-up Requests</h1>
           <p className="text-muted-foreground">Approve or reject pending top-up requests from users</p>
         </div>
-        <TestTelegramButton />
+        <div className="flex gap-2">
+          <SetupTelegramWebhookButton />
+          <TestTelegramButton />
+        </div>
       </div>
 
       <Card>
