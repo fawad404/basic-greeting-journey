@@ -33,37 +33,40 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (userData) {
-        // Fetch approved payments and calculate balance
+        // Fetch all payments and calculate balance
         const { data: payments } = await supabase
           .from('payments')
           .select('*')
           .eq('user_id', userData.id)
-          .eq('status', 'approved')
 
         let calculatedBalance = 0
         if (payments) {
           calculatedBalance = payments.reduce((sum, payment) => {
             const fee = payment.fee || 0
+            
             if (payment.transaction_id.startsWith('TOPUP-')) {
-              // For approved top-ups, this is money going OUT - don't add to balance
-              return sum
+              // Top-up requests: deduct amount regardless of status
+              if (payment.status === 'pending') {
+                // Pending top-ups: deduct full amount
+                return sum - payment.amount
+              } else if (payment.status === 'approved') {
+                // Approved top-ups: deduct amount + any additional fee
+                return sum - payment.amount - fee
+              } else {
+                // Rejected top-ups: don't affect balance
+                return sum
+              }
             } else {
-              // For crypto deposits, add to balance minus fee
-              return sum + (payment.amount - fee)
+              // Crypto deposits: add to balance minus fee (only when approved)
+              if (payment.status === 'approved') {
+                return sum + (payment.amount - fee)
+              }
+              return sum
             }
           }, 0)
         }
         
-        // Subtract pending top-ups from balance
-        const { data: pendingTopups } = await supabase
-          .from('payments')
-          .select('amount')
-          .eq('user_id', userData.id)
-          .eq('status', 'pending')
-          .like('transaction_id', 'TOPUP-%')
-        
-        const pendingDeductions = (pendingTopups || []).reduce((sum, topup) => sum + topup.amount, 0)
-        setBalance(calculatedBalance - pendingDeductions)
+        setBalance(calculatedBalance)
       }
     } catch (error) {
       console.error('Error fetching user balance:', error)
