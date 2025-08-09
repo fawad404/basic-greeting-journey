@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,7 @@ export default function AdAccounts() {
   const { toast } = useToast()
   const { user } = useAuth()
   
-  // Declare all useState hooks first
+  // Declare all useState hooks first - always in the same order
   const [loading, setLoading] = useState(true)
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<AdAccount | null>(null)
@@ -41,13 +41,13 @@ export default function AdAccounts() {
   const [isTopUpOpen, setIsTopUpOpen] = useState(false)
   const [isReplaceOpen, setIsReplaceOpen] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      fetchAccounts()
+  // Define fetchAccounts function with useCallback to prevent recreation on every render
+  const fetchAccounts = useCallback(async () => {
+    if (!user?.email) {
+      setLoading(false)
+      return
     }
-  }, [user])
 
-  const fetchAccounts = async () => {
     try {
       const { data: userData } = await supabase
         .from('users')
@@ -77,7 +77,12 @@ export default function AdAccounts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.email, toast])
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [fetchAccounts])
+
 
   const filteredAccounts = accounts.filter(account =>
     account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
