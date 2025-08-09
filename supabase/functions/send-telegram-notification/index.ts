@@ -14,7 +14,11 @@ interface NotificationRequest {
 
 async function sendTelegramMessage(message: string, transactionId: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
-  const ADMIN_CHAT_ID = '7610098144'
+  // Array of admin chat IDs - add your second admin's chat ID here
+  const ADMIN_CHAT_IDS = [
+    '7610098144', // First admin
+    'SECOND_ADMIN_CHAT_ID' // Replace with second admin's chat ID
+  ]
   
   if (!TELEGRAM_BOT_TOKEN) {
     console.error('TELEGRAM_BOT_TOKEN not found in environment variables')
@@ -22,29 +26,36 @@ async function sendTelegramMessage(message: string, transactionId: string): Prom
   }
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+  let allSent = true
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: ADMIN_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML',
-        reply_markup: createInlineKeyboard(transactionId)
-      }),
-    })
+    // Send message to each admin
+    for (const chatId of ADMIN_CHAT_IDS) {
+      console.log(`Sending notification to admin: ${chatId}`)
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML',
+          reply_markup: createInlineKeyboard(transactionId)
+        }),
+      })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Telegram API error:', response.status, errorText)
-      return false
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Telegram API error for admin ${chatId}:`, response.status, errorText)
+        allSent = false
+      } else {
+        console.log(`Telegram notification sent successfully to admin: ${chatId}`)
+      }
     }
 
-    console.log('Telegram notification sent successfully')
-    return true
+    return allSent
   } catch (error) {
     console.error('Error sending Telegram notification:', error)
     return false
