@@ -82,14 +82,12 @@ export default function TopUpRequests() {
 
     try {
       const feeAmount = parseFloat(fee) || 0
-      const amountAfterFee = selectedRequest.amount - feeAmount
 
       const { error } = await supabase
         .from('payments')
         .update({ 
           status: 'approved',
           fee: feeAmount,
-          user_balance_at_time: amountAfterFee,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedRequest.id)
