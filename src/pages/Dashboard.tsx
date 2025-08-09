@@ -3,8 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2 } from "lucide-react"
+import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2, Calendar } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { useAuth } from "@/hooks/useAuth"
+import { supabase } from "@/integrations/supabase/client"
+import { useState, useEffect } from "react"
 
 const spendData = [
   { name: "Mon", value: 8500 },
@@ -31,6 +34,65 @@ const teamMembers = [
 ]
 
 export default function Dashboard() {
+  const { user, isAdmin } = useAuth()
+  const [metrics, setMetrics] = useState({
+    totalTransferAmount: 0,
+    totalTopupAmount: 0,
+    accountCreatedDate: '',
+    totalSpending: 0
+  })
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      if (!user) return
+
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, created_at')
+          .eq('email', user.email)
+          .single()
+
+        if (userData) {
+          // Get all payments for this user
+          const { data: payments } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('user_id', userData.id)
+            .eq('status', 'approved')
+
+          let totalTransferAmount = 0
+          let totalTopupAmount = 0
+
+          if (payments) {
+            payments.forEach(payment => {
+              if (payment.transaction_id.startsWith('TOPUP-')) {
+                // Sum all top-up amounts
+                totalTopupAmount += payment.amount
+              } else {
+                // Sum all deposit amounts (crypto deposits)
+                totalTransferAmount += payment.amount
+              }
+            })
+          }
+
+          setMetrics({
+            totalTransferAmount,
+            totalTopupAmount,
+            accountCreatedDate: new Date(userData.created_at).toLocaleDateString(),
+            totalSpending: totalTopupAmount // Total spending equals total top-ups
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching metrics:', error)
+      }
+    }
+
+    if (user && !isAdmin) {
+      fetchMetrics()
+    }
+  }, [user, isAdmin])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -43,25 +105,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Transfer Amount"
-          value="$128,504.67"
+          value={`$${metrics.totalTransferAmount.toFixed(2)}`}
           icon={<DollarSign className="h-4 w-4 text-success" />}
           className="border-l-4 border-l-success"
         />
         <MetricCard
           title="Total Top-up Amount"
-          value="$34,547.29"
-          icon={<Users className="h-4 w-4 text-primary" />}
+          value={`$${metrics.totalTopupAmount.toFixed(2)}`}
+          icon={<CreditCard className="h-4 w-4 text-primary" />}
           className="border-l-4 border-l-primary"
         />
         <MetricCard
           title="Account Created"
-          value="$1,694,238.43"
-          icon={<BarChart3 className="h-4 w-4 text-warning" />}
+          value={metrics.accountCreatedDate}
+          icon={<Calendar className="h-4 w-4 text-warning" />}
           className="border-l-4 border-l-warning"
         />
         <MetricCard
           title="Total Spending"
-          value="$34,547.29"
+          value={`$${metrics.totalSpending.toFixed(2)}`}
           icon={<TrendingUp className="h-4 w-4 text-success" />}
           className="border-l-4 border-l-success"
         />

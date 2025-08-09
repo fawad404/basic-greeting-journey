@@ -171,7 +171,8 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
-              <p className="text-xs text-sidebar-foreground/60">Balance: ${userBalance.toFixed(2)}</p>
+              <p className="text-xs text-sidebar-foreground/60 mt-1">Available Balance</p>
+              <p className="text-sm font-semibold text-success">${userBalance.toFixed(2)}</p>
             </div>
           )}
         </div>
