@@ -108,13 +108,24 @@ export default function Dashboard() {
 
     // Only return data for days that have actual spending
     const chartData = Object.entries(dailySpending).map(([dateStr, amount]) => ({
-      name: format(parseISO(dateStr), 'EEE dd'),
+      name: format(parseISO(dateStr), 'EEE'),
       value: amount,
       date: dateStr
     }))
 
     // Sort by date
     chartData.sort((a, b) => a.date.localeCompare(b.date))
+
+    // If no data, show last 7 days of the date range with 0 values for proper week display
+    if (chartData.length === 0) {
+      const days = eachDayOfInterval({ start: startDate, end: endDate })
+      const lastSevenDays = days.slice(-7)
+      return lastSevenDays.map(date => ({
+        name: format(date, 'EEE'),
+        value: 0,
+        date: format(date, 'yyyy-MM-dd')
+      }))
+    }
 
     return chartData
   }
@@ -434,7 +445,7 @@ export default function Dashboard() {
                     axisLine={false}
                     tickLine={false}
                     className="text-xs text-muted-foreground"
-                    domain={[100, 100000000]}
+                    domain={[0, 1000000]}
                     tickFormatter={(value) => {
                       if (value >= 1000000) return `$${(value / 1000000).toFixed(0)}M`
                       if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`
