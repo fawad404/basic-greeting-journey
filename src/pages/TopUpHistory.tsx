@@ -66,16 +66,14 @@ export default function TopUpHistory() {
             return sum + payment.amount
           }, 0)
           
-          // Subtract pending top-ups (amounts deducted from balance when request was made)
-          const pendingTopUps = allPayments.filter(p => 
-            p.transaction_id.startsWith('TOPUP-') && p.status === 'pending'
+          // Subtract ALL top-ups (both pending and approved) - they are money SPENT from balance
+          const allTopUps = allPayments.filter(p => 
+            p.transaction_id.startsWith('TOPUP-') && (p.status === 'pending' || p.status === 'approved')
           )
-          const pendingAmount = pendingTopUps.reduce((sum, payment) => sum + payment.amount, 0)
+          const spentAmount = allTopUps.reduce((sum, payment) => sum + payment.amount, 0)
           
-          // Note: Approved top-ups don't add to balance - they just remove the pending deduction
-          // The user's balance was already reduced when they made the top-up request
-          
-          calculatedBalance = cryptoBalance - pendingAmount
+          // Balance = crypto deposits - all top-ups (spent money)
+          calculatedBalance = cryptoBalance - spentAmount
         }
 
         setUserBalance(calculatedBalance)
