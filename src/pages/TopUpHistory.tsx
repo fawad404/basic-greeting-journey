@@ -66,8 +66,8 @@ export default function TopUpHistory() {
                 // Pending top-ups: deduct full amount
                 return sum - payment.amount
               } else if (payment.status === 'approved') {
-                // Approved top-ups: deduct amount + any additional fee
-                return sum - payment.amount - fee
+                // Approved top-ups: deduct only the original amount, fee comes from top-up itself
+                return sum - payment.amount
               } else {
                 // Rejected top-ups: don't affect balance
                 return sum
