@@ -41,29 +41,28 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
         let calculatedBalance = 0
         if (payments) {
-          calculatedBalance = payments.reduce((sum, payment) => {
+          // First calculate total from all approved top-ups (what admin entered as top-up amount)
+          const approvedTopUps = payments.filter(p => 
+            p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
+          )
+          const topUpBalance = approvedTopUps.reduce((sum, payment) => sum + payment.amount, 0)
+          
+          // Then subtract pending top-ups (original request amounts)
+          const pendingTopUps = payments.filter(p => 
+            p.transaction_id.startsWith('TOPUP-') && p.status === 'pending'
+          )
+          const pendingAmount = pendingTopUps.reduce((sum, payment) => sum + payment.amount, 0)
+          
+          // Add crypto deposits
+          const cryptoDeposits = payments.filter(p => 
+            !p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
+          )
+          const cryptoBalance = cryptoDeposits.reduce((sum, payment) => {
             const fee = payment.fee || 0
-            
-            if (payment.transaction_id.startsWith('TOPUP-')) {
-              // Top-up requests: deduct amount regardless of status
-              if (payment.status === 'pending') {
-                // Pending top-ups: deduct full amount
-                return sum - payment.amount
-              } else if (payment.status === 'approved') {
-                // Approved top-ups: deduct only the original amount, fee comes from top-up itself
-                return sum - payment.amount
-              } else {
-                // Rejected top-ups: don't affect balance
-                return sum
-              }
-            } else {
-              // Crypto deposits: add to balance minus fee (only when approved)
-              if (payment.status === 'approved') {
-                return sum + (payment.amount - fee)
-              }
-              return sum
-            }
+            return sum + (payment.amount - fee)
           }, 0)
+          
+          calculatedBalance = topUpBalance + cryptoBalance - pendingAmount
         }
         
         setBalance(calculatedBalance)
