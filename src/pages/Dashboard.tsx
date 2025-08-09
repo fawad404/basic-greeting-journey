@@ -149,14 +149,12 @@ export default function Dashboard() {
           .single()
 
         if (userData) {
-          // Get all payments for this user within date range
-          const { data: payments } = await supabase
+          // Get ALL payments for this user (no date filter here)
+          const { data: allPayments } = await supabase
             .from('payments')
             .select('*')
             .eq('user_id', userData.id)
             .eq('status', 'approved')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
 
           // Get account count for this user
           const { data: adAccounts } = await supabase
@@ -167,8 +165,14 @@ export default function Dashboard() {
           let totalTransferAmount = 0
           let totalTopupAmount = 0
 
-          if (payments) {
-            payments.forEach(payment => {
+          if (allPayments) {
+            // Filter payments by date range for metrics
+            const filteredPayments = allPayments.filter(payment => {
+              const paymentDate = new Date(payment.created_at)
+              return paymentDate >= startDate && paymentDate <= endDate
+            })
+
+            filteredPayments.forEach(payment => {
               if (payment.transaction_id.startsWith('TOPUP-')) {
                 totalTopupAmount += payment.amount
               } else {
@@ -176,8 +180,8 @@ export default function Dashboard() {
               }
             })
 
-            // Generate chart data
-            const chartData = generateChartData(payments)
+            // Generate chart data using all payments
+            const chartData = generateChartData(allPayments)
             setSpendChartData(chartData)
           }
 
@@ -210,13 +214,11 @@ export default function Dashboard() {
           .gte('created_at', startDate.toISOString())
           .lte('created_at', endDate.toISOString())
 
-        // Get all approved payments within date range
+        // Get ALL approved payments (no date filter here)
         const { data: allPayments } = await supabase
           .from('payments')
           .select('*')
           .eq('status', 'approved')
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
 
         // Get suspended ad accounts
         const { data: suspendedAccounts } = await supabase
@@ -229,7 +231,13 @@ export default function Dashboard() {
         let totalServiceFees = 0
 
         if (allPayments) {
-          allPayments.forEach(payment => {
+          // Filter payments by date range for metrics
+          const filteredPayments = allPayments.filter(payment => {
+            const paymentDate = new Date(payment.created_at)
+            return paymentDate >= startDate && paymentDate <= endDate
+          })
+
+          filteredPayments.forEach(payment => {
             if (payment.transaction_id.startsWith('TOPUP-')) {
               totalSpending += payment.amount
             } else {
@@ -240,7 +248,7 @@ export default function Dashboard() {
             }
           })
 
-          // Generate chart data
+          // Generate chart data using all payments
           const chartData = generateChartData(allPayments)
           setSpendChartData(chartData)
         }
