@@ -12,7 +12,7 @@ interface NotificationRequest {
   note?: string
 }
 
-async function sendTelegramMessage(message: string): Promise<boolean> {
+async function sendTelegramMessage(message: string, transactionId: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
   const ADMIN_CHAT_ID = '7610098144'
   
@@ -33,6 +33,7 @@ async function sendTelegramMessage(message: string): Promise<boolean> {
         chat_id: ADMIN_CHAT_ID,
         text: message,
         parse_mode: 'HTML',
+        reply_markup: createInlineKeyboard(transactionId)
       }),
     })
 
@@ -50,17 +51,37 @@ async function sendTelegramMessage(message: string): Promise<boolean> {
   }
 }
 
+function createInlineKeyboard(transactionId: string) {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: "✅ Approve Top-up",
+          callback_data: `approve_${transactionId}`
+        },
+        {
+          text: "❌ Reject Top-up", 
+          callback_data: `reject_${transactionId}`
+        }
+      ],
+      [
+        {
+          text: "👁️ View Top-up",
+          url: "https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests"
+        }
+      ]
+    ]
+  }
+}
+
 function formatTopUpNotification(data: NotificationRequest): string {
   return `🔔 <b>New Top-Up Request</b>
 
 👤 <b>User:</b> ${data.userEmail}
 💰 <b>Amount:</b> $${data.amount}
-🔗 <b>Transaction ID:</b> ${data.transactionId}
 ${data.note ? `📝 <b>Note:</b> ${data.note}` : ''}
 
-⏰ <b>Time:</b> ${new Date().toLocaleString()}
-
-Please review and approve/reject this request in the admin panel.`
+⏰ <b>Time:</b> ${new Date().toLocaleString()}`
 }
 
 Deno.serve(async (req) => {
@@ -99,7 +120,7 @@ Deno.serve(async (req) => {
     console.log('Formatted message:', message)
     
     console.log('Sending Telegram message...')
-    const success = await sendTelegramMessage(message)
+    const success = await sendTelegramMessage(message, transactionId)
     console.log('Telegram send result:', success)
 
     if (success) {

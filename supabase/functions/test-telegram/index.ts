@@ -3,7 +3,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function sendTelegramMessage(message: string): Promise<boolean> {
+function createTestInlineKeyboard(transactionId: string) {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: "✅ Approve Top-up",
+          callback_data: `approve_${transactionId}`
+        },
+        {
+          text: "❌ Reject Top-up", 
+          callback_data: `reject_${transactionId}`
+        }
+      ],
+      [
+        {
+          text: "👁️ View Top-up",
+          url: "https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests"
+        }
+      ]
+    ]
+  }
+}
+
+async function sendTelegramMessage(message: string, transactionId: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
   const ADMIN_CHAT_ID = '7610098144'
   
@@ -24,6 +47,7 @@ async function sendTelegramMessage(message: string): Promise<boolean> {
       chat_id: ADMIN_CHAT_ID,
       text: message,
       parse_mode: 'HTML',
+      reply_markup: createTestInlineKeyboard(transactionId)
     }
     console.log('Sending payload:', payload)
     
@@ -63,6 +87,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const testTransactionId = `TOPUP-${Date.now()}-TEST123`
     const testMessage = `🧪 <b>Test Message</b>
 
 This is a test notification from your payment system bot.
@@ -71,17 +96,14 @@ This is a test notification from your payment system bot.
 
 👤 <b>User:</b> test@example.com
 💰 <b>Amount:</b> $100.00
-🔗 <b>Transaction ID:</b> TOPUP-${Date.now()}-TEST123
 📝 <b>Note:</b> This is a test top-up request
 
 ⏰ <b>Time:</b> ${new Date().toLocaleString()}
 
-✅ <b>Status:</b> Bot is working correctly!
-
-Please review and approve/reject this request in the admin panel.`
+✅ <b>Status:</b> Bot is working correctly!`
 
     console.log('Sending test message...')
-    const success = await sendTelegramMessage(testMessage)
+    const success = await sendTelegramMessage(testMessage, testTransactionId)
 
     if (success) {
       return new Response(
