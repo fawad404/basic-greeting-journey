@@ -47,20 +47,43 @@ export default function ReplacementRequests() {
       const { data: requestsData, error } = await supabase
         .from('requests')
         .select(`
-          *,
-          users!inner(email),
-          ad_accounts(account_name)
+          id,
+          user_id,
+          ad_account_id,
+          description,
+          screenshot_url,
+          status,
+          created_at
         `)
         .eq('request_type', 'replacement')
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      const formattedRequests = requestsData?.map((request: any) => ({
-        ...request,
-        user_email: request.users?.email,
-        account_name: request.ad_accounts?.account_name
-      })) || []
+      // Fetch user emails separately
+      const userIds = [...new Set(requestsData?.map(r => r.user_id) || [])]
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds)
+
+      // Fetch account names separately
+      const accountIds = [...new Set(requestsData?.filter(r => r.ad_account_id).map(r => r.ad_account_id) || [])]
+      const { data: accountsData } = await supabase
+        .from('ad_accounts')
+        .select('id, account_name')
+        .in('id', accountIds)
+
+      const formattedRequests = requestsData?.map((request: any) => {
+        const user = usersData?.find(u => u.id === request.user_id)
+        const account = accountsData?.find(a => a.id === request.ad_account_id)
+        
+        return {
+          ...request,
+          user_email: user?.email,
+          account_name: account?.account_name
+        }
+      }) || []
 
       setRequests(formattedRequests)
     } catch (error: any) {

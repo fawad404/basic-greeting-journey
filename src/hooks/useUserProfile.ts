@@ -24,7 +24,7 @@ export function useUserProfile(userId: string | undefined) {
           .from('users')
           .select('username, telegram_username')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching user profile:', error);
