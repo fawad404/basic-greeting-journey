@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
-import { Pencil, Plus } from "lucide-react"
+import { Pencil, Plus, Search } from "lucide-react"
 
 interface User {
   id: string;
@@ -44,6 +44,8 @@ export default function UserAccounts() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [formData, setFormData] = useState({
     user_id: '',
     account_name: '',
@@ -51,9 +53,7 @@ export default function UserAccounts() {
     status: 'active',
     budget: 0,
     access_email: '',
-    country: 'N/A',
-    timezone: 'UTC',
-    currency: 'USD'
+    timezone: 'UTC'
   })
 
   useEffect(() => {
@@ -66,10 +66,17 @@ export default function UserAccounts() {
     try {
       console.log('Fetching users and accounts...')
       
-      // Fetch users
+      // Fetch only customer users with role information
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, email, username, telegram_username')
+        .select(`
+          id, 
+          email, 
+          username, 
+          telegram_username,
+          user_roles!inner(role)
+        `)
+        .eq('user_roles.role', 'customer')
         .order('email')
 
       if (usersError) {
@@ -96,7 +103,9 @@ export default function UserAccounts() {
       console.log('Current user is admin:', isAdmin)
       console.log('Auth loading state:', authLoading)
       
-      setUsers(usersData || [])
+      const customerUsers = usersData || []
+      setUsers(customerUsers)
+      setFilteredUsers(customerUsers)
       setAccounts((accountsData as any) || [])
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -110,6 +119,29 @@ export default function UserAccounts() {
     }
   }
 
+  // Search functionality
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase()
+    setSearchQuery(query)
+    
+    if (query.trim() === '') {
+      setFilteredUsers(users)
+    } else {
+      const filtered = users.filter(user => 
+        (user.username?.toLowerCase().includes(query)) ||
+        (user.telegram_username?.toLowerCase().includes(query)) ||
+        (user.email?.toLowerCase().includes(query))
+      )
+      setFilteredUsers(filtered)
+    }
+  }
+
+  const handleUserSelect = (userId: string) => {
+    setFormData({ ...formData, user_id: userId })
+    setSearchQuery('')
+    setFilteredUsers(users)
+  }
+
   const resetForm = () => {
     setFormData({
       user_id: '',
@@ -118,11 +150,11 @@ export default function UserAccounts() {
       status: 'active',
       budget: 0,
       access_email: '',
-      country: 'N/A',
-      timezone: 'UTC',
-      currency: 'USD'
+      timezone: 'UTC'
     })
     setEditingAccount(null)
+    setSearchQuery('')
+    setFilteredUsers(users)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,9 +210,7 @@ export default function UserAccounts() {
       status: account.status as 'active' | 'suspended',
       budget: account.budget,
       access_email: account.access_email,
-      country: account.country,
-      timezone: account.timezone,
-      currency: account.currency
+      timezone: account.timezone
     })
     setIsDialogOpen(true)
   }
@@ -244,18 +274,28 @@ export default function UserAccounts() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="user_id">Select User</Label>
+              <div className="space-y-2">
+                <Label htmlFor="user_search">Search & Select User</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="user_search"
+                    placeholder="Search by username, telegram username, or email..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    className="pl-10"
+                  />
+                </div>
                 <Select 
                   value={formData.user_id} 
-                  onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+                  onValueChange={handleUserSelect}
                   required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a user..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    {users.map((user) => (
+                  <SelectContent className="bg-background border border-border z-50 max-h-[200px]">
+                    {filteredUsers.map((user) => (
                       <SelectItem 
                         key={user.id} 
                         value={user.id}
@@ -264,6 +304,11 @@ export default function UserAccounts() {
                         {user.username || user.telegram_username || user.email}
                       </SelectItem>
                     ))}
+                    {filteredUsers.length === 0 && searchQuery && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No users found matching "{searchQuery}"
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -315,16 +360,6 @@ export default function UserAccounts() {
               </div>
 
               <div>
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="N/A"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="timezone">Timezone</Label>
                 <Input
                   id="timezone"
@@ -332,24 +367,6 @@ export default function UserAccounts() {
                   onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
                   placeholder="UTC"
                 />
-              </div>
-
-              <div>
-                <Label htmlFor="currency">Currency</Label>
-                <Select 
-                  value={formData.currency} 
-                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="USD" className="bg-background hover:bg-accent focus:bg-accent">USD</SelectItem>
-                    <SelectItem value="EUR" className="bg-background hover:bg-accent focus:bg-accent">EUR</SelectItem>
-                    <SelectItem value="GBP" className="bg-background hover:bg-accent focus:bg-accent">GBP</SelectItem>
-                    <SelectItem value="CAD" className="bg-background hover:bg-accent focus:bg-accent">CAD</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div>
