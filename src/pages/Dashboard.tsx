@@ -35,6 +35,7 @@ const teamMembers = [
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth()
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true)
   const [metrics, setMetrics] = useState({
     totalTransferAmount: 0,
     totalTopupAmount: 0,
@@ -45,6 +46,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       if (!user) return
+
+      setIsLoadingMetrics(true)
 
       try {
         const { data: userData } = await supabase
@@ -85,6 +88,8 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('Error fetching metrics:', error)
+      } finally {
+        setIsLoadingMetrics(false)
       }
     }
 
@@ -103,30 +108,38 @@ export default function Dashboard() {
 
       {/* Financial Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Transfer Amount"
-          value={`$${metrics.totalTransferAmount.toFixed(2)}`}
-          icon={<DollarSign className="h-4 w-4 text-success" />}
-          className="border-l-4 border-l-success"
-        />
-        <MetricCard
-          title="Total Top-up Amount"
-          value={`$${metrics.totalTopupAmount.toFixed(2)}`}
-          icon={<CreditCard className="h-4 w-4 text-primary" />}
-          className="border-l-4 border-l-primary"
-        />
-        <MetricCard
-          title="Account Created"
-          value={metrics.accountCreatedDate}
-          icon={<Calendar className="h-4 w-4 text-warning" />}
-          className="border-l-4 border-l-warning"
-        />
-        <MetricCard
-          title="Total Spending"
-          value={`$${metrics.totalSpending.toFixed(2)}`}
-          icon={<TrendingUp className="h-4 w-4 text-success" />}
-          className="border-l-4 border-l-success"
-        />
+        {isLoadingMetrics ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-32 bg-muted animate-pulse rounded-lg"></div>
+          ))
+        ) : (
+          <>
+            <MetricCard
+              title="Total Transfer Amount"
+              value={`$${metrics.totalTransferAmount.toFixed(2)}`}
+              icon={<DollarSign className="h-4 w-4 text-success" />}
+              className="border-l-4 border-l-success"
+            />
+            <MetricCard
+              title="Total Top-up Amount"
+              value={`$${metrics.totalTopupAmount.toFixed(2)}`}
+              icon={<CreditCard className="h-4 w-4 text-primary" />}
+              className="border-l-4 border-l-primary"
+            />
+            <MetricCard
+              title="Account Created"
+              value={metrics.accountCreatedDate}
+              icon={<Calendar className="h-4 w-4 text-warning" />}
+              className="border-l-4 border-l-warning"
+            />
+            <MetricCard
+              title="Total Spending"
+              value={`$${metrics.totalSpending.toFixed(2)}`}
+              icon={<TrendingUp className="h-4 w-4 text-success" />}
+              className="border-l-4 border-l-success"
+            />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

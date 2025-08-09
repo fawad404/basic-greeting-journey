@@ -52,11 +52,14 @@ export function AppSidebar() {
   const currentPath = location?.pathname || "/"
   const collapsed = state === "collapsed"
   const { user, isAdmin, logout } = useAuth()
-  const [userBalance, setUserBalance] = useState(5247.82)
+  const [userBalance, setUserBalance] = useState<number | null>(null)
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true)
 
   useEffect(() => {
     const fetchUserBalance = async () => {
       if (!user) return
+      
+      setIsLoadingBalance(true)
 
       try {
         const { data: userData } = await supabase
@@ -99,6 +102,8 @@ export function AppSidebar() {
         }
       } catch (error) {
         console.error('Error fetching user balance:', error)
+      } finally {
+        setIsLoadingBalance(false)
       }
     }
 
@@ -172,7 +177,11 @@ export function AppSidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
               <p className="text-xs text-sidebar-foreground/60 mt-1">Available Balance</p>
-              <p className="text-sm font-semibold text-success">${userBalance.toFixed(2)}</p>
+              {isLoadingBalance ? (
+                <div className="h-5 w-20 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <p className="text-sm font-semibold text-success">${userBalance?.toFixed(2) || '0.00'}</p>
+              )}
             </div>
           )}
         </div>
