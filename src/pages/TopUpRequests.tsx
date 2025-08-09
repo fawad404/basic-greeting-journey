@@ -25,11 +25,6 @@ interface TopUpRequest {
 export default function TopUpRequests() {
   const [requests, setRequests] = useState<TopUpRequest[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedRequest, setSelectedRequest] = useState<TopUpRequest | null>(null)
-  const [totalAmount, setTotalAmount] = useState("")
-  const [topUpAmount, setTopUpAmount] = useState("")
-  const [feeAmount, setFeeAmount] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const fetchRequests = async () => {
@@ -73,44 +68,23 @@ export default function TopUpRequests() {
     }
   }
 
-  const handleApproval = (request: TopUpRequest) => {
-    setSelectedRequest(request)
-    setTotalAmount(request.amount.toString())
-    setTopUpAmount("")
-    setFeeAmount("")
-    setIsDialogOpen(true)
-  }
-
-  const handleConfirmApproval = async () => {
-    if (!selectedRequest) return
-
-    const total = parseFloat(totalAmount) || 0
-    const topUp = parseFloat(topUpAmount) || 0
-    const fee = parseFloat(feeAmount) || 0
-
+  const handleApproval = async (request: TopUpRequest) => {
     try {
       const { error } = await supabase
         .from('payments')
         .update({ 
           status: 'approved',
-          amount: topUp, // Update amount to be the actual top-up amount client gets
-          fee: fee,
           updated_at: new Date().toISOString()
         })
-        .eq('id', selectedRequest.id)
+        .eq('id', request.id)
 
       if (error) throw error
 
       toast({
         title: "Request Approved",
-        description: `Top-up of $${topUp.toFixed(2)} approved (Total: $${total.toFixed(2)}, Fee: $${fee.toFixed(2)})`,
+        description: `Top-up request approved successfully`,
       })
 
-      setIsDialogOpen(false)
-      setSelectedRequest(null)
-      setTotalAmount("")
-      setTopUpAmount("")
-      setFeeAmount("")
       fetchRequests()
     } catch (error) {
       console.error('Error approving request:', error)
@@ -250,113 +224,6 @@ export default function TopUpRequests() {
         </CardContent>
       </Card>
 
-      {/* Approval Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Approve Top-up Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>User Email</Label>
-                <div className="text-sm text-muted-foreground">{selectedRequest?.user_email}</div>
-              </div>
-              <div>
-                <Label>Original Request</Label>
-                <div className="text-sm text-muted-foreground">${selectedRequest?.amount.toFixed(2)}</div>
-              </div>
-            </div>
-            
-            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium">Payment Breakdown</h4>
-              
-              <div>
-                <Label htmlFor="totalAmount">Total Amount Received</Label>
-                <Input
-                  id="totalAmount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Total amount client transferred to you
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="topUpAmount">Top-up Amount</Label>
-                <Input
-                  id="topUpAmount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={topUpAmount}
-                  onChange={(e) => setTopUpAmount(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Amount to add to client's balance
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="feeAmount">Fee Amount</Label>
-                <Input
-                  id="feeAmount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={feeAmount}
-                  onChange={(e) => setFeeAmount(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Your service fee (10-20% as per your model)
-                </p>
-              </div>
-
-              {totalAmount && topUpAmount && feeAmount && (
-                <div className="mt-3 p-3 bg-background rounded border">
-                  <div className="text-sm">
-                    <div className="flex justify-between">
-                      <span>Total Transfer Amount:</span>
-                      <span>${parseFloat(totalAmount).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Client Gets (Top-up):</span>
-                      <span>${parseFloat(topUpAmount).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Admin Fee:</span>
-                      <span>${parseFloat(feeAmount).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleConfirmApproval} 
-                className="flex-1 bg-success hover:bg-success/80"
-                disabled={!totalAmount || !topUpAmount || !feeAmount}
-              >
-                Approve Payment
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
