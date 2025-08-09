@@ -413,14 +413,8 @@ export default function Dashboard() {
         {/* Total Spend Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Total spend</CardTitle>
+            <CardTitle>Total Spending</CardTitle>
             <div className="text-3xl font-bold">${currentTotalSpending.toFixed(2)}</div>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Payment methods</span>
-              <span>Card merchants</span>
-              <span>Contacts</span>
-              <span>Card groups</span>
-            </div>
           </CardHeader>
           <CardContent>
             <div className="h-[200px] w-full">
