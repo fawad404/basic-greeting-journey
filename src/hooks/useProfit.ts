@@ -34,6 +34,26 @@ export function useProfit() {
     };
 
     fetchProfit();
+
+    // Set up real-time subscription for payments updates
+    const channel = supabase
+      .channel('profit-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'payments'
+        },
+        () => {
+          fetchProfit();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return { profit, isLoading };
