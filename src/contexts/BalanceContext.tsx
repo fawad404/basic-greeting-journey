@@ -58,8 +58,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
             !p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
           )
           const cryptoBalance = cryptoDeposits.reduce((sum, payment) => {
-            const fee = payment.fee || 0
-            return sum + (payment.amount - fee)
+            // For crypto deposits, amount is the admin-entered "Total Top-up Amount"
+            return sum + payment.amount
           }, 0)
           
           calculatedBalance = topUpBalance + cryptoBalance - pendingAmount
