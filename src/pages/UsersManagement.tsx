@@ -45,7 +45,7 @@ export default function UsersManagement() {
       const [userRolesResponse, usersResponse, paymentsResponse, balancesResponse] = await Promise.all([
         supabase.from('user_roles').select('user_id, role'),
         supabase.from('users').select('*'),
-        supabase.from('payments').select('user_id, amount, fee, status'),
+        supabase.from('payments').select('user_id, amount, fee, status, transaction_id'),
         supabase.from('user_balances').select('user_id, balance')
       ]);
 
@@ -60,11 +60,9 @@ export default function UsersManagement() {
       const usersMap = new Map(usersData.map(u => [u.id, u]));
       const balancesMap = new Map(balancesData.map(b => [b.user_id, Number(b.balance) || 0]));
       
-      // Calculate financial data for each user
+      // Calculate financial data for each user - matching AddBalance.tsx logic
       const userFinancials = new Map();
       paymentsData.forEach(payment => {
-        if (payment.status !== 'approved') return;
-        
         if (!userFinancials.has(payment.user_id)) {
           userFinancials.set(payment.user_id, {
             totalTopupAmount: 0,
@@ -77,9 +75,18 @@ export default function UsersManagement() {
         const amount = Number(payment.amount) || 0;
         const fee = Number(payment.fee) || 0;
         
-        userFinancial.approvedAmount += amount;
-        userFinancial.feesPaid += fee;
-        userFinancial.totalTopupAmount += amount + fee;
+        // Only count approved payments like in AddBalance.tsx
+        if (payment.status === 'approved') {
+          // For crypto payments (non-TOPUP), the amount field is the total top-up amount after admin approval
+          if (!payment.transaction_id || !payment.transaction_id.startsWith('TOPUP-')) {
+            userFinancial.totalTopupAmount += amount; // This is the "Total Top-up" amount from AddBalance.tsx
+            userFinancial.feesPaid += fee;
+            userFinancial.approvedAmount += amount; // This contributes to user balance
+          } else {
+            // For TOPUP transactions (withdrawals), subtract from balance
+            userFinancial.approvedAmount -= (amount + fee);
+          }
+        }
       });
 
       // Build the final users list
