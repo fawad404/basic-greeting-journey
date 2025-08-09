@@ -35,12 +35,25 @@ interface AdAccount {
 
 export default function UserAccounts() {
   const { user, isAdmin, loading: authLoading } = useAuth()
+  const { toast } = useToast()
+  
+  // Declare ALL useState hooks first - always in the same order
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
-  const { toast } = useToast()
+  const [formData, setFormData] = useState({
+    user_id: '',
+    account_name: '',
+    account_id: '',
+    status: 'active',
+    budget: 0,
+    access_email: '',
+    country: 'N/A',
+    timezone: 'UTC',
+    currency: 'USD'
+  })
 
   // Wait for auth to load before checking admin status
   if (authLoading) {
@@ -63,18 +76,6 @@ export default function UserAccounts() {
       </div>
     )
   }
-
-  const [formData, setFormData] = useState({
-    user_id: '',
-    account_name: '',
-    account_id: '',
-    status: 'active',
-    budget: 0,
-    access_email: '',
-    country: 'N/A',
-    timezone: 'UTC',
-    currency: 'USD'
-  })
 
   useEffect(() => {
     fetchData()
