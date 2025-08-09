@@ -18,6 +18,7 @@ import TopUpHistory from "./pages/TopUpHistory";
 import UserDashboard from "./pages/UserDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { BalanceProvider } from "@/contexts/BalanceContext";
 
 const queryClient = new QueryClient();
 
@@ -32,21 +33,23 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/*" element={
               <AuthGuard>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/tickets" element={<Tickets />} />
-                    <Route path="/ad-accounts" element={<AdAccounts />} />
-                    <Route path="/add-balance" element={<AddBalance />} />
-                    <Route path="/users-management" element={<UsersManagement />} />
-                    <Route path="/user-accounts" element={<UserAccounts />} />
-                    <Route path="/payments" element={<Payments />} />
-                    <Route path="/top-up-requests" element={<TopUpRequests />} />
-                    <Route path="/top-up-history" element={<TopUpHistory />} />
-                    <Route path="/user-dashboard/:userId" element={<UserDashboard />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Layout>
+                <BalanceProvider>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/tickets" element={<Tickets />} />
+                      <Route path="/ad-accounts" element={<AdAccounts />} />
+                      <Route path="/add-balance" element={<AddBalance />} />
+                      <Route path="/users-management" element={<UsersManagement />} />
+                      <Route path="/user-accounts" element={<UserAccounts />} />
+                      <Route path="/payments" element={<Payments />} />
+                      <Route path="/top-up-requests" element={<TopUpRequests />} />
+                      <Route path="/top-up-history" element={<TopUpHistory />} />
+                      <Route path="/user-dashboard/:userId" element={<UserDashboard />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Layout>
+                </BalanceProvider>
               </AuthGuard>
             } />
           </Routes>
