@@ -92,9 +92,12 @@ export default function UsersManagement() {
         
         const userFinancial = userFinancials.get(payment.user_id);
         if (payment.status === 'approved') {
-          userFinancial.totalTopupAmount += (Number(payment.amount) || 0) + (Number(payment.fee) || 0);
-          userFinancial.feesPaid += Number(payment.fee) || 0;
-          userFinancial.approvedAmount += Number(payment.amount) || 0;
+          const amount = Number(payment.amount) || 0;
+          const fee = Number(payment.fee) || 0;
+          
+          userFinancial.totalTopupAmount += amount + fee;
+          userFinancial.feesPaid += fee;
+          userFinancial.approvedAmount += amount;
         }
       });
 
