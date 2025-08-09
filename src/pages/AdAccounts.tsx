@@ -28,6 +28,11 @@ interface AdAccount {
 }
 
 export default function AdAccounts() {
+  const { toast } = useToast()
+  const { user } = useAuth()
+  
+  // Declare all useState hooks first
+  const [loading, setLoading] = useState(true)
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<AdAccount | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -35,17 +40,14 @@ export default function AdAccounts() {
   const [replaceReason, setReplaceReason] = useState("")
   const [isTopUpOpen, setIsTopUpOpen] = useState(false)
   const [isReplaceOpen, setIsReplaceOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-  const { user } = useAuth()
 
   useEffect(() => {
-    fetchAccounts()
+    if (user) {
+      fetchAccounts()
+    }
   }, [user])
 
   const fetchAccounts = async () => {
-    if (!user) return
-
     try {
       const { data: userData } = await supabase
         .from('users')
