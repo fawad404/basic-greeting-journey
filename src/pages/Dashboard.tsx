@@ -177,10 +177,12 @@ export default function Dashboard() {
       try {
         const { startDate, endDate } = getDateRange()
 
-        // Get total number of user accounts
+        // Get total number of user accounts within date range
         const { data: totalUsers } = await supabase
           .from('users')
           .select('id')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
 
         // Get all approved payments within date range
         const { data: allPayments } = await supabase
@@ -493,14 +495,14 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">March 1, 2025 <Badge variant="secondary" className="ml-2">INITIATION</Badge></p>
+                  <div className="text-sm font-medium">March 1, 2025 <Badge variant="secondary" className="ml-2">INITIATION</Badge></div>
                   <p className="text-xs text-muted-foreground">Gusto is trying to pull $25,000 from your Cash Account</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 border border-destructive/20 rounded-lg">
                 <div className="w-2 h-2 bg-destructive rounded-full"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">March 1, 2025 <Badge variant="destructive" className="ml-2">WARNING</Badge></p>
+                  <div className="text-sm font-medium">March 1, 2025 <Badge variant="destructive" className="ml-2">WARNING</Badge></div>
                   <p className="text-xs text-muted-foreground">ACH flagged - Vendor limit exceeded.</p>
                 </div>
               </div>
