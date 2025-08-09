@@ -141,9 +141,9 @@ export default function AdAccounts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left sidebar - Account List */}
-        <div className="w-full lg:w-1/3 space-y-4">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Ad Accounts</h2>
             <span className="text-sm text-muted-foreground">{accounts.length}</span>
@@ -189,7 +189,7 @@ export default function AdAccounts() {
         </div>
 
         {/* Right side - Account Details */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           {selectedAccount ? (
             <>
               <div className="flex items-center justify-between mb-6">

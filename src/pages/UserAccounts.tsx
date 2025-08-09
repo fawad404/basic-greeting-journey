@@ -34,7 +34,7 @@ interface AdAccount {
 }
 
 export default function UserAccounts() {
-  const { isAdmin } = useAuth()
+  const { user, isAdmin, loading: authLoading } = useAuth()
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,13 +42,23 @@ export default function UserAccounts() {
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
   const { toast } = useToast()
 
-  // Add admin check
+  // Wait for auth to load before checking admin status
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  // Add admin check only after auth is loaded
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
           <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+          <p className="text-xs text-muted-foreground mt-2">Current role: {user?.email}</p>
         </div>
       </div>
     )
