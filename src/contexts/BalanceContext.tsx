@@ -17,7 +17,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   const fetchUserBalance = useCallback(async () => {
-    console.log('🔥 BALANCE DEBUG: fetchUserBalance called for user:', user?.email)
     if (!user) {
       setBalance(null)
       setIsLoading(false)
@@ -63,7 +62,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
           calculatedBalance = cryptoBalance - pendingAmount
         }
         
-        console.log('🔥 BALANCE DEBUG: Calculated balance:', calculatedBalance)
         setBalance(calculatedBalance)
       }
     } catch (error) {

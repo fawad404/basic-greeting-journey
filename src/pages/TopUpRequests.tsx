@@ -6,9 +6,6 @@ import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 interface TopUpRequest {
   id: string
@@ -68,9 +65,12 @@ export default function TopUpRequests() {
     }
   }
 
+  // CRITICAL: This function ONLY updates the payment status - NO BALANCE CALCULATIONS OR UPDATES
   const handleApproval = async (request: TopUpRequest) => {
-    console.log('🔥 APPROVAL DEBUG: Starting approval for request:', request.id)
     try {
+      console.log('⚠️ APPROVAL: Only updating payment status - NO balance changes')
+      
+      // ONLY update the payment status - nothing else
       const { error } = await supabase
         .from('payments')
         .update({ 
@@ -81,15 +81,15 @@ export default function TopUpRequests() {
 
       if (error) throw error
 
-      console.log('🔥 APPROVAL DEBUG: Payment status updated successfully')
+      console.log('✅ APPROVAL: Payment status updated to approved - balance remains unchanged')
 
       toast({
         title: "Request Approved",
-        description: `Top-up request approved successfully`,
+        description: `Top-up request approved successfully. User balance calculation handled automatically.`,
       })
 
+      // Refresh the requests list
       fetchRequests()
-      console.log('🔥 APPROVAL DEBUG: fetchRequests() called')
     } catch (error) {
       console.error('Error approving request:', error)
       toast({
@@ -100,29 +100,33 @@ export default function TopUpRequests() {
     }
   }
 
-  const handleStatusUpdate = async (requestId: string, newStatus: 'rejected') => {
+  const handleReject = async (requestId: string) => {
     try {
+      console.log('⚠️ REJECTION: Only updating payment status to rejected')
+      
       const { error } = await supabase
         .from('payments')
         .update({ 
-          status: newStatus,
+          status: 'rejected',
           updated_at: new Date().toISOString()
         })
         .eq('id', requestId)
 
       if (error) throw error
 
+      console.log('✅ REJECTION: Payment status updated to rejected')
+
       toast({
-        title: "Status Updated",
-        description: `Request has been ${newStatus}`,
+        title: "Request Rejected",
+        description: `Top-up request has been rejected`,
       })
 
       fetchRequests()
     } catch (error) {
-      console.error('Error updating request status:', error)
+      console.error('Error rejecting request:', error)
       toast({
         title: "Error",
-        description: "Failed to update request status",
+        description: "Failed to reject request",
         variant: "destructive",
       })
     }
@@ -144,7 +148,7 @@ export default function TopUpRequests() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Top-up Requests</h1>
-        <p className="text-muted-foreground">View pending top-up requests from users</p>
+        <p className="text-muted-foreground">Approve or reject pending top-up requests from users</p>
       </div>
 
       <Card>
@@ -209,7 +213,7 @@ export default function TopUpRequests() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleStatusUpdate(request.id, 'rejected')}
+                        onClick={() => handleReject(request.id)}
                       >
                         <XCircle className="h-3 w-3 mr-1" />
                         Reject
@@ -227,7 +231,6 @@ export default function TopUpRequests() {
           )}
         </CardContent>
       </Card>
-
     </div>
   )
 }
