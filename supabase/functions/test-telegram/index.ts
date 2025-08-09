@@ -28,7 +28,7 @@ function createTestInlineKeyboard(transactionId: string) {
 
 async function sendTelegramMessage(message: string, transactionId: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
-  const ADMIN_CHAT_ID = '7610098144'
+  const ADMIN_CHAT_ID = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID')
   
   console.log('=== Testing Telegram Bot ===')
   console.log('Bot Token exists:', !!TELEGRAM_BOT_TOKEN)
@@ -110,7 +110,7 @@ This is a test notification from your payment system bot.
         JSON.stringify({ 
           success: true, 
           message: 'Test notification sent successfully to Telegram!',
-          chatId: '7610098144'
+          chatId: ADMIN_CHAT_ID
         }),
         { 
           status: 200, 
