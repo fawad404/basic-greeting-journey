@@ -327,8 +327,7 @@ export default function AddBalance() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">DATE</th>
-                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TOTAL TRANSFER AMOUNT</th>
-                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TOP-UP AMOUNT</th>
+                  <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">AMOUNT</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">FEE</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">TRANSACTION HASH</th>
                   <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">STATUS</th>
@@ -344,13 +343,7 @@ export default function AddBalance() {
                       </div>
                     </td>
                     <td className="py-4 px-2 font-medium">
-                      ${(payment.user_balance_at_time || 0).toFixed(2)} USDT
-                    </td>
-                    <td className="py-4 px-2 font-medium">
-                      {payment.transaction_id.startsWith('TOPUP-') 
-                        ? `$${(payment.amount - (payment.fee || 0)).toFixed(2)} USDT`
-                        : `$${payment.amount.toFixed(2)} USDT`
-                      }
+                      $${payment.amount.toFixed(2)} USDT
                     </td>
                     <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
