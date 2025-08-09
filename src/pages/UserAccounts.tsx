@@ -46,6 +46,7 @@ export default function UserAccounts() {
   const [editingAccount, setEditingAccount] = useState<AdAccount | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
   const [formData, setFormData] = useState({
     user_id: '',
     account_name: '',
@@ -142,6 +143,7 @@ export default function UserAccounts() {
     
     if (query.trim() === '') {
       setFilteredUsers(users)
+      setShowSearchResults(false)
     } else {
       const filtered = users.filter(user => 
         (user.username?.toLowerCase().includes(query)) ||
@@ -149,13 +151,29 @@ export default function UserAccounts() {
         (user.email?.toLowerCase().includes(query))
       )
       setFilteredUsers(filtered)
+      setShowSearchResults(true)
     }
+  }
+
+  const handleSearchUserSelect = (user: User) => {
+    setFormData({ ...formData, user_id: user.id })
+    setSearchQuery(user.username || user.telegram_username || user.email)
+    setShowSearchResults(false)
   }
 
   const handleUserSelect = (userId: string) => {
     setFormData({ ...formData, user_id: userId })
-    setSearchQuery('')
-    setFilteredUsers(users)
+  }
+
+  const handleSearchFocus = () => {
+    if (searchQuery.trim() !== '') {
+      setShowSearchResults(true)
+    }
+  }
+
+  const handleSearchBlur = () => {
+    // Delay hiding to allow click on search results
+    setTimeout(() => setShowSearchResults(false), 200)
   }
 
   const resetForm = () => {
@@ -299,8 +317,35 @@ export default function UserAccounts() {
                     placeholder="Search by username, telegram username, or email..."
                     value={searchQuery}
                     onChange={handleSearchChange}
+                    onFocus={handleSearchFocus}
+                    onBlur={handleSearchBlur}
                     className="pl-10"
                   />
+                  {/* Live search results dropdown */}
+                  {showSearchResults && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b border-border last:border-b-0"
+                            onClick={() => handleSearchUserSelect(user)}
+                          >
+                            <div className="font-medium">
+                              {user.username || user.telegram_username || user.email}
+                            </div>
+                            {user.email && user.email !== (user.username || user.telegram_username) && (
+                              <div className="text-xs text-muted-foreground">{user.email}</div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          No users found matching "{searchQuery}"
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <Select 
                   value={formData.user_id} 
@@ -311,7 +356,7 @@ export default function UserAccounts() {
                     <SelectValue placeholder="Select a user..." />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50 max-h-[200px]">
-                    {filteredUsers.map((user) => (
+                    {users.map((user) => (
                       <SelectItem 
                         key={user.id} 
                         value={user.id}
@@ -320,9 +365,9 @@ export default function UserAccounts() {
                         {user.username || user.telegram_username || user.email}
                       </SelectItem>
                     ))}
-                    {filteredUsers.length === 0 && searchQuery && (
+                    {users.length === 0 && (
                       <div className="px-3 py-2 text-sm text-muted-foreground">
-                        No users found matching "{searchQuery}"
+                        No customer users found
                       </div>
                     )}
                   </SelectContent>
