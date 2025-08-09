@@ -60,14 +60,15 @@ export default function UsersManagement() {
       const usersMap = new Map(usersData.map(u => [u.id, u]));
       const balancesMap = new Map(balancesData.map(b => [b.user_id, Number(b.balance) || 0]));
       
-      // Calculate financial data for each user - matching AddBalance.tsx logic
+      // Calculate financial data for each user - matching TopUpHistory.tsx logic
       const userFinancials = new Map();
       paymentsData.forEach(payment => {
         if (!userFinancials.has(payment.user_id)) {
           userFinancials.set(payment.user_id, {
             totalTopupAmount: 0,
             feesPaid: 0,
-            approvedAmount: 0
+            cryptoDeposits: 0,
+            amountSpent: 0
           });
         }
         
@@ -75,19 +76,21 @@ export default function UsersManagement() {
         const amount = Number(payment.amount) || 0;
         const fee = Number(payment.fee) || 0;
         
-        // Only count approved payments like in AddBalance.tsx
-        if (payment.status === 'approved') {
-          // For crypto payments (non-TOPUP), the amount field is the total top-up amount after admin approval
-          if (!payment.transaction_id || !payment.transaction_id.startsWith('TOPUP-')) {
+        // For crypto payments (non-TOPUP), only count approved ones for total top-up
+        if (!payment.transaction_id || !payment.transaction_id.startsWith('TOPUP-')) {
+          if (payment.status === 'approved') {
             userFinancial.totalTopupAmount += amount; // This is the "Total Top-up" amount from AddBalance.tsx
             userFinancial.feesPaid += fee;
-            userFinancial.approvedAmount += amount; // This contributes to user balance
-          } else {
-            // For TOPUP transactions (withdrawals), subtract from balance
-            userFinancial.approvedAmount -= (amount + fee);
+            userFinancial.cryptoDeposits += amount; // For balance calculation
+          }
+        } else {
+          // For TOPUP transactions (money spent from balance), count pending and approved
+          if (payment.status === 'pending' || payment.status === 'approved') {
+            userFinancial.amountSpent += amount; // Sum of "Top-up Amount" from TopUpHistory.tsx
           }
         }
       });
+
 
       // Build the final users list
       const formattedUsers = userRolesData.map(userRole => {
@@ -95,10 +98,12 @@ export default function UsersManagement() {
         const userFinancial = userFinancials.get(userRole.user_id) || {
           totalTopupAmount: 0,
           feesPaid: 0,
-          approvedAmount: 0
+          cryptoDeposits: 0,
+          amountSpent: 0
         };
-        const currentBalance = balancesMap.get(userRole.user_id) || 0;
-        const amountSpent = Math.max(0, userFinancial.approvedAmount - currentBalance);
+        
+        // Available balance = crypto deposits - amount spent (matching TopUpHistory.tsx logic)
+        const availableBalance = userFinancial.cryptoDeposits - userFinancial.amountSpent;
         
         return {
           id: userRole.user_id,
@@ -108,8 +113,8 @@ export default function UsersManagement() {
           created_at: userInfo?.created_at || new Date().toISOString(),
           role: userRole.role,
           totalTopupAmount: userFinancial.totalTopupAmount,
-          availableBalance: currentBalance,
-          amountSpent: amountSpent,
+          availableBalance: availableBalance,
+          amountSpent: userFinancial.amountSpent, // Sum of Top-up Amount from TopUpHistory.tsx
           feesPaid: userFinancial.feesPaid,
         };
       });
