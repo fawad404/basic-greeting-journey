@@ -52,12 +52,14 @@ async function sendTelegramMessage(message: string, transactionId: string): Prom
 }
 
 function createInlineKeyboard(transactionId: string) {
+  const APP_DOMAIN = Deno.env.get('APP_DOMAIN') || 'https://goads-dashboard.vercel.app'
+  
   return {
     inline_keyboard: [
       [
         {
           text: "👁️ View Request",
-          url: `https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests?transaction=${transactionId}`
+          url: `${APP_DOMAIN}/top-up-requests?transaction=${transactionId}`
         }
       ]
     ]
