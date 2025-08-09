@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { useBalance } from "@/contexts/BalanceContext"
 import { DollarSign, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -21,49 +22,19 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
   const [amount, setAmount] = useState("")
   const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
-  const [userBalance, setUserBalance] = useState(0)
-  const [balanceLoading, setBalanceLoading] = useState(false)
   
   const { user } = useAuth()
   const { toast } = useToast()
+  const { balance, isLoading: balanceLoading, updateBalanceAfterTopUp, refreshBalance } = useBalance()
 
   useEffect(() => {
     if (open && user) {
-      fetchUserBalance()
+      refreshBalance()
     }
-  }, [open, user])
+  }, [open, user, refreshBalance])
 
-  const fetchUserBalance = async () => {
-    if (!user) return
 
-    setBalanceLoading(true)
-    try {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single()
-
-      if (userData) {
-        const { data: payments } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('user_id', userData.id)
-          .eq('status', 'approved')
-
-        const balance = (payments || []).reduce((sum, payment) => {
-          const fee = payment.fee || 0
-          return sum + (payment.amount - fee)
-        }, 0)
-
-        setUserBalance(balance)
-      }
-    } catch (error) {
-      console.error('Error fetching user balance:', error)
-    } finally {
-      setBalanceLoading(false)
-    }
-  }
+  const userBalance = balance || 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,6 +98,9 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
           title: "Top-up Request Submitted",
           description: `Your request for $${topUpAmount} has been sent to admin for approval.`,
         })
+
+        // Update balance immediately in context
+        updateBalanceAfterTopUp(topUpAmount)
 
         // Reset form
         setAmount("")
