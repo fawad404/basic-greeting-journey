@@ -87,7 +87,13 @@ export default function Dashboard() {
 
   const generateChartData = (payments: any[]) => {
     const { startDate, endDate } = getDateRange()
-    const topupPayments = payments.filter(p => p.transaction_id.startsWith('TOPUP-'))
+    
+    // Filter payments to only include topup payments within the date range
+    const topupPayments = payments.filter(p => {
+      if (!p.transaction_id.startsWith('TOPUP-')) return false
+      const paymentDate = new Date(p.created_at)
+      return paymentDate >= startDate && paymentDate <= endDate
+    })
     
     // Group payments by date
     const dailySpending: { [key: string]: number } = {}
@@ -100,35 +106,15 @@ export default function Dashboard() {
       dailySpending[paymentDate] += payment.amount
     })
 
-    // Generate chart data based on date range - show last 7 days
-    const days = eachDayOfInterval({ start: startDate, end: endDate })
-    let chartDays = days
-    
-    // If more than 7 days, show only last 7
-    if (days.length > 7) {
-      chartDays = days.slice(-7)
-    }
-    
-    const chartData = chartDays.map(date => {
-      const dateStr = format(date, 'yyyy-MM-dd')
-      return {
-        name: format(date, 'EEE'),
-        value: dailySpending[dateStr] || 0
-      }
-    })
+    // Only return data for days that have actual spending
+    const chartData = Object.entries(dailySpending).map(([dateStr, amount]) => ({
+      name: format(parseISO(dateStr), 'EEE dd'),
+      value: amount,
+      date: dateStr
+    }))
 
-    // If all values are 0, create some sample data for visualization
-    const hasData = chartData.some(item => item.value > 0)
-    if (!hasData && topupPayments.length > 0) {
-      // Distribute the total spending across the days
-      const totalSpending = topupPayments.reduce((sum, p) => sum + p.amount, 0)
-      const avgDaily = totalSpending / chartData.length
-      
-      return chartData.map((item, index) => ({
-        ...item,
-        value: avgDaily * (0.8 + Math.random() * 0.4) // Add some variation
-      }))
-    }
+    // Sort by date
+    chartData.sort((a, b) => a.date.localeCompare(b.date))
 
     return chartData
   }
@@ -448,6 +434,8 @@ export default function Dashboard() {
                     axisLine={false}
                     tickLine={false}
                     className="text-xs text-muted-foreground"
+                    domain={[0, 'dataMax']}
+                    tickFormatter={(value) => `$${(value / 1000000).toFixed(0)}M`}
                   />
                   <Bar 
                     dataKey="value" 
