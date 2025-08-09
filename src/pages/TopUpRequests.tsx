@@ -5,6 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, FileText } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 
 interface TopUpRequest {
   id: string
@@ -14,6 +22,7 @@ interface TopUpRequest {
   note: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
+  updated_at: string
   user_email?: string
 }
 
@@ -24,11 +33,12 @@ export default function TopUpRequests() {
 
   const fetchRequests = async () => {
     try {
-      // Get pending requests only
+      // Get pending top-up requests only (identified by transaction_id starting with 'TOPUP-')
       const { data: requestsData, error: requestsError } = await supabase
         .from('payments')
         .select('*')
         .eq('status', 'pending')
+        .like('transaction_id', 'TOPUP-%')
         .order('created_at', { ascending: false })
 
       if (requestsError) throw requestsError
@@ -59,6 +69,35 @@ export default function TopUpRequests() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleStatusUpdate = async (requestId: string, newStatus: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId)
+
+      if (error) throw error
+
+      toast({
+        title: "Status Updated",
+        description: `Request has been ${newStatus}`,
+      })
+
+      // Refresh the requests list
+      fetchRequests()
+    } catch (error) {
+      console.error('Error updating request status:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update request status",
+        variant: "destructive",
+      })
     }
   }
 
@@ -97,29 +136,58 @@ export default function TopUpRequests() {
               <TableRow>
                 <TableHead>User Email</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Transaction ID</TableHead>
+                <TableHead>Request ID</TableHead>
                 <TableHead>Note</TableHead>
                 <TableHead>Date Submitted</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.user_email}</TableCell>
-                  <TableCell className="font-medium">${request.amount.toFixed(2)}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {request.transaction_id.length > 20 
-                      ? `${request.transaction_id.substring(0, 20)}...` 
-                      : request.transaction_id}
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{request.user_email}</div>
+                      <div className="text-xs text-muted-foreground">ID: {request.user_id.substring(0, 8)}...</div>
+                    </div>
                   </TableCell>
-                  <TableCell>{request.note || '-'}</TableCell>
+                  <TableCell className="font-medium text-lg">${request.amount.toFixed(2)}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {request.transaction_id}
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    <div className="truncate" title={request.note || ''}>
+                      {request.note || '-'}
+                    </div>
+                  </TableCell>
                   <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge className="bg-warning text-warning-foreground">
                       <Clock className="h-3 w-3 mr-1" />
                       Pending
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleStatusUpdate(request.id, 'approved')}
+                        className="bg-success hover:bg-success/80"
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleStatusUpdate(request.id, 'rejected')}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

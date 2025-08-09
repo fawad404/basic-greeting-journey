@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { TopUpDialog } from "@/components/TopUpDialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -89,14 +90,9 @@ export default function AdAccounts() {
     account.account_id.includes(searchTerm)
   )
 
-  const handleTopUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    toast({
-      title: "Top-up Request Submitted",
-      description: `Request for $${topUpAmount} has been submitted for review.`,
-    })
-    setTopUpAmount("")
-    setIsTopUpOpen(false)
+  const handleTopUpClick = (account: AdAccount) => {
+    setSelectedAccount(account)
+    setIsTopUpOpen(true)
   }
 
   const handleReplaceSubmit = async (e: React.FormEvent) => {
@@ -268,38 +264,12 @@ export default function AdAccounts() {
                     
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-4">
-                      <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
-                        <DialogTrigger asChild>
-                          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            Top-Up
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Top-Up Account</DialogTitle>
-                          </DialogHeader>
-                          <form onSubmit={handleTopUpSubmit} className="space-y-4">
-                            <div>
-                              <Label htmlFor="amount">Amount ($)</Label>
-                              <Input
-                                id="amount"
-                                type="number"
-                                step="0.01"
-                                value={topUpAmount}
-                                onChange={(e) => setTopUpAmount(e.target.value)}
-                                placeholder="Enter amount"
-                                required
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button type="button" variant="outline" onClick={() => setIsTopUpOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button type="submit">Submit Request</Button>
-                            </div>
-                          </form>
-                        </DialogContent>
-                      </Dialog>
+                      <Button 
+                        onClick={() => handleTopUpClick(selectedAccount)}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        Top-Up
+                      </Button>
 
                       {selectedAccount.status === 'suspended' && (
                         <Dialog open={isReplaceOpen} onOpenChange={setIsReplaceOpen}>
@@ -423,6 +393,14 @@ export default function AdAccounts() {
           )}
         </div>
       </div>
+
+      {/* Top-up Dialog */}
+      <TopUpDialog 
+        open={isTopUpOpen}
+        onOpenChange={setIsTopUpOpen}
+        accountId={selectedAccount?.account_id}
+        accountName={selectedAccount?.account_name}
+      />
     </div>
   )
 }

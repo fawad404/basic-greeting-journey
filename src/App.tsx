@@ -14,6 +14,7 @@ import UsersManagement from "./pages/UsersManagement";
 import UserAccounts from "./pages/UserAccounts";
 import Payments from "./pages/Payments";
 import TopUpRequests from "./pages/TopUpRequests";
+import TopUpHistory from "./pages/TopUpHistory";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
                     <Route path="/user-accounts" element={<UserAccounts />} />
                     <Route path="/payments" element={<Payments />} />
                     <Route path="/top-up-requests" element={<TopUpRequests />} />
+                    <Route path="/top-up-history" element={<TopUpHistory />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

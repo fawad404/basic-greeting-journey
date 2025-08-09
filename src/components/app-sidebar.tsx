@@ -7,7 +7,8 @@ import {
   LogOut,
   UserCheck,
   FileText,
-  Receipt
+  Receipt,
+  Calendar
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
@@ -32,6 +33,7 @@ const baseNavigationItems = [
   { title: "Tickets", url: "/tickets", icon: Ticket },
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
   { title: "Add Balance", url: "/add-balance", icon: CreditCard },
+  { title: "Top-up History", url: "/top-up-history", icon: Calendar },
 ]
 
 const adminNavigationItems = [
