@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { TopUpDialog } from "@/components/TopUpDialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
-import { Search, MapPin, Clock, Calendar } from "lucide-react"
+import { Search, MapPin, Clock, Calendar, Loader2 } from "lucide-react"
 
 interface AdAccount {
   id: string;
@@ -137,8 +138,46 @@ export default function AdAccounts() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="min-h-screen bg-background">
+        <div className="flex">
+          {/* Left Sidebar - Loading Skeleton */}
+          <div className="w-96 border-r border-border bg-card">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <Skeleton className="h-7 w-32" />
+                <Skeleton className="h-5 w-8" />
+              </div>
+              
+              <div className="relative mb-6">
+                <Skeleton className="h-10 w-full" />
+              </div>
+
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 rounded-lg border border-border">
+                    <div className="flex justify-between items-start mb-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                    <Skeleton className="h-3 w-32 mb-2" />
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Loading */}
+          <div className="flex-1 bg-background flex items-center justify-center">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading ad accounts...</span>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
