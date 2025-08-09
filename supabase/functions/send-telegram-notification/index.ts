@@ -64,17 +64,27 @@ Please review and approve/reject this request in the admin panel.`
 }
 
 Deno.serve(async (req) => {
+  console.log('=== Telegram notification function called ===')
+  console.log('Request method:', req.method)
+  console.log('Request URL:', req.url)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { userEmail, amount, transactionId, note }: NotificationRequest = await req.json()
+    console.log('Attempting to parse request body...')
+    const body = await req.json()
+    console.log('Parsed body:', body)
+    
+    const { userEmail, amount, transactionId, note }: NotificationRequest = body
     
     console.log('Received notification request:', { userEmail, amount, transactionId, note })
 
     if (!userEmail || !amount || !transactionId) {
+      console.error('Missing required fields:', { userEmail, amount, transactionId })
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { 
@@ -84,10 +94,16 @@ Deno.serve(async (req) => {
       )
     }
 
+    console.log('Formatting message...')
     const message = formatTopUpNotification({ userEmail, amount, transactionId, note })
+    console.log('Formatted message:', message)
+    
+    console.log('Sending Telegram message...')
     const success = await sendTelegramMessage(message)
+    console.log('Telegram send result:', success)
 
     if (success) {
+      console.log('✅ Notification sent successfully')
       return new Response(
         JSON.stringify({ success: true, message: 'Notification sent successfully' }),
         { 
@@ -96,6 +112,7 @@ Deno.serve(async (req) => {
         }
       )
     } else {
+      console.error('❌ Failed to send notification')
       return new Response(
         JSON.stringify({ error: 'Failed to send notification' }),
         { 
@@ -105,9 +122,10 @@ Deno.serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error('Error in send-telegram-notification function:', error)
+    console.error('❌ Error in send-telegram-notification function:', error)
+    console.error('Error stack:', error.stack)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
