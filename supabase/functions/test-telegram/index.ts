@@ -39,6 +39,11 @@ async function sendTelegramMessage(message: string, transactionId: string): Prom
     return false
   }
 
+  if (!ADMIN_CHAT_ID) {
+    console.error('TELEGRAM_ADMIN_CHAT_ID not found in environment variables')
+    return false
+  }
+
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
   console.log('Telegram API URL:', url)
   
@@ -87,6 +92,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const ADMIN_CHAT_ID = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID')
+    
     const testTransactionId = `TOPUP-${Date.now()}-TEST123`
     const testMessage = `🧪 <b>Test Message</b>
 
