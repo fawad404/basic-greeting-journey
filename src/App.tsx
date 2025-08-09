@@ -14,6 +14,7 @@ import UsersManagement from "./pages/UsersManagement";
 import UserAccounts from "./pages/UserAccounts";
 import Payments from "./pages/Payments";
 import TopUpRequests from "./pages/TopUpRequests";
+import Requests from "./pages/Requests";
 import TopUpHistory from "./pages/TopUpHistory";
 import UserDashboard from "./pages/UserDashboard";
 import Login from "./pages/Login";
@@ -43,6 +44,7 @@ const App = () => (
                       <Route path="/users-management" element={<UsersManagement />} />
                       <Route path="/user-accounts" element={<UserAccounts />} />
                       <Route path="/payments" element={<Payments />} />
+                      <Route path="/requests/*" element={<Requests />} />
                       <Route path="/top-up-requests" element={<TopUpRequests />} />
                       <Route path="/top-up-history" element={<TopUpHistory />} />
                       <Route path="/user-dashboard/:userId" element={<UserDashboard />} />

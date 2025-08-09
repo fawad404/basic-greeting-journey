@@ -147,6 +147,45 @@ export type Database = {
         }
         Relationships: []
       }
+      requests: {
+        Row: {
+          ad_account_id: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          request_type: string
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          request_type: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          request_type?: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_balances: {
         Row: {
           balance: number

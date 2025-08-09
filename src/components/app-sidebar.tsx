@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import {
   LayoutDashboard, 
   Ticket, 
@@ -8,7 +8,9 @@ import {
   UserCheck,
   FileText,
   Receipt,
-  Calendar
+  Calendar,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
@@ -30,24 +32,40 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
-const baseNavigationItems = [
+interface NavigationItem {
+  title: string
+  url: string
+  icon: React.ComponentType<any>
+  subItems?: { title: string; url: string }[]
+}
+
+const baseNavigationItems: NavigationItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Tickets", url: "/tickets", icon: Ticket },
 ]
 
-const customerNavigationItems = [
+const customerNavigationItems: NavigationItem[] = [
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
 ]
 
-const userOnlyNavigationItems = [
+const userOnlyNavigationItems: NavigationItem[] = [
   { title: "Add Balance", url: "/add-balance", icon: CreditCard },
   { title: "Top-up History", url: "/top-up-history", icon: Calendar },
 ]
 
-const adminNavigationItems = [
+const adminNavigationItems: NavigationItem[] = [
   { title: "Users Management", url: "/users-management", icon: UserCheck },
   { title: "User Accounts", url: "/user-accounts", icon: Users },
-  { title: "Top-up Requests", url: "/top-up-requests", icon: FileText },
+  { 
+    title: "Requests", 
+    url: "/requests", 
+    icon: FileText,
+    subItems: [
+      { title: "Top-up Requests", url: "/requests/topup" },
+      { title: "Replacement", url: "/requests/replacement" },
+      { title: "Change Access", url: "/requests/change-access" }
+    ]
+  },
   { title: "Payments", url: "/payments", icon: Receipt },
 ]
 
@@ -60,6 +78,7 @@ export function AppSidebar() {
   const { balance, isLoading: isLoadingBalance } = useBalance()
   const { profit, isLoading: isLoadingProfit } = useProfit()
   const { profile, isLoading: isLoadingProfile } = useUserProfile(user?.id)
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Requests'])
   
   const navigationItems = isAdmin
     ? [...baseNavigationItems, ...adminNavigationItems]
@@ -76,6 +95,14 @@ export function AppSidebar() {
     isActiveRoute 
       ? "bg-sidebar-accent text-sidebar-primary font-medium border-r-2 border-sidebar-primary" 
       : "hover:bg-sidebar-accent/50 transition-colors"
+
+  const toggleExpanded = (title: string) => {
+    setExpandedItems(prev => 
+      prev.includes(title) 
+        ? prev.filter(item => item !== title)
+        : [...prev, title]
+    )
+  }
 
   return (
     <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"} border-r border-sidebar-border`}>
@@ -104,16 +131,49 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-10">
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"}
-                      className={getNavClass(isActive(item.url))}
-                    >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {!collapsed && <span className="ml-3">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {item.subItems ? (
+                    <>
+                      <SidebarMenuButton 
+                        onClick={() => toggleExpanded(item.title)}
+                        className="h-10 w-full justify-between"
+                      >
+                        <div className="flex items-center">
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          {!collapsed && <span className="ml-3">{item.title}</span>}
+                        </div>
+                        {!collapsed && (
+                          expandedItems.includes(item.title) 
+                            ? <ChevronDown className="h-4 w-4" />
+                            : <ChevronRight className="h-4 w-4" />
+                        )}
+                      </SidebarMenuButton>
+                      {!collapsed && expandedItems.includes(item.title) && (
+                        <div className="ml-7 mt-1 space-y-1">
+                          {item.subItems.map((subItem) => (
+                            <SidebarMenuButton key={subItem.title} asChild className="h-8 text-sm">
+                              <NavLink 
+                                to={subItem.url}
+                                className={getNavClass(isActive(subItem.url))}
+                              >
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <SidebarMenuButton asChild className="h-10">
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/"}
+                        className={getNavClass(isActive(item.url))}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!collapsed && <span className="ml-3">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -44,6 +44,10 @@ export default function AdAccounts() {
   const [replaceReason, setReplaceReason] = useState("")
   const [isTopUpOpen, setIsTopUpOpen] = useState(false)
   const [isReplaceOpen, setIsReplaceOpen] = useState(false)
+  const [isChangeAccessOpen, setIsChangeAccessOpen] = useState(false)
+  const [changeAccessEmail, setChangeAccessEmail] = useState("")
+  const [changeAccessReason, setChangeAccessReason] = useState("")
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
 
   // Define fetchAccounts function with useCallback to prevent recreation on every render
   const fetchAccounts = useCallback(async () => {
@@ -112,12 +116,34 @@ export default function AdAccounts() {
         .single()
 
       if (userData) {
+        let screenshotUrl = null
+
+        // Upload screenshot if provided
+        if (screenshotFile) {
+          const fileExt = screenshotFile.name.split('.').pop()
+          const fileName = `${userData.id}/${Date.now()}.${fileExt}`
+          
+          const { error: uploadError } = await supabase.storage
+            .from('request-screenshots')
+            .upload(fileName, screenshotFile)
+
+          if (uploadError) throw uploadError
+
+          const { data: urlData } = supabase.storage
+            .from('request-screenshots')
+            .getPublicUrl(fileName)
+          
+          screenshotUrl = urlData.publicUrl
+        }
+
         const { error } = await supabase
-          .from('account_replacement_requests')
+          .from('requests')
           .insert([{
             user_id: userData.id,
             ad_account_id: selectedAccount.id,
-            reason: replaceReason
+            request_type: 'replacement',
+            description: replaceReason,
+            screenshot_url: screenshotUrl
           }])
 
         if (error) throw error
@@ -127,6 +153,7 @@ export default function AdAccounts() {
           description: "Your account replacement request has been submitted for review.",
         })
         setReplaceReason("")
+        setScreenshotFile(null)
         setIsReplaceOpen(false)
       }
     } catch (error: any) {
@@ -134,6 +161,48 @@ export default function AdAccounts() {
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to submit replacement request"
+      })
+    }
+  }
+
+  const handleChangeAccessSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!selectedAccount || !user) return
+
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (userData) {
+        const { error } = await supabase
+          .from('requests')
+          .insert([{
+            user_id: userData.id,
+            ad_account_id: selectedAccount.id,
+            request_type: 'change_access',
+            description: changeAccessReason,
+            email: changeAccessEmail
+          }])
+
+        if (error) throw error
+
+        toast({
+          title: "Change Access Request Submitted",
+          description: "Your change access request has been submitted for review.",
+        })
+        setChangeAccessEmail("")
+        setChangeAccessReason("")
+        setIsChangeAccessOpen(false)
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to submit change access request"
       })
     }
   }
@@ -325,7 +394,7 @@ export default function AdAccounts() {
                           </DialogHeader>
                           <form onSubmit={handleReplaceSubmit} className="space-y-4">
                             <div>
-                              <Label htmlFor="reason">Reason for Replacement</Label>
+                              <Label htmlFor="reason">Description of Issue *</Label>
                               <Textarea
                                 id="reason"
                                 value={replaceReason}
@@ -333,6 +402,19 @@ export default function AdAccounts() {
                                 placeholder="Please explain why you need account replacement..."
                                 required
                               />
+                            </div>
+                            <div>
+                              <Label htmlFor="screenshot">Screenshot (Optional)</Label>
+                              <Input
+                                id="screenshot"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                                className="cursor-pointer"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Upload a screenshot to help explain the issue (images only)
+                              </p>
                             </div>
                             <div className="flex justify-end gap-2">
                               <Button type="button" variant="outline" onClick={() => setIsReplaceOpen(false)}>
@@ -344,9 +426,47 @@ export default function AdAccounts() {
                         </DialogContent>
                       </Dialog>
 
-                      <Button variant="outline" className="border-muted-foreground">
-                        Change Access
-                      </Button>
+                      <Dialog open={isChangeAccessOpen} onOpenChange={setIsChangeAccessOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="border-muted-foreground">
+                            Change Access
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Request Access Change</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={handleChangeAccessSubmit} className="space-y-4">
+                            <div>
+                              <Label htmlFor="newEmail">New Email Address *</Label>
+                              <Input
+                                id="newEmail"
+                                type="email"
+                                value={changeAccessEmail}
+                                onChange={(e) => setChangeAccessEmail(e.target.value)}
+                                placeholder="Enter the new email address..."
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="accessReason">Reason/Request Details *</Label>
+                              <Textarea
+                                id="accessReason"
+                                value={changeAccessReason}
+                                onChange={(e) => setChangeAccessReason(e.target.value)}
+                                placeholder="Please explain why you need to change access..."
+                                required
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button type="button" variant="outline" onClick={() => setIsChangeAccessOpen(false)}>
+                                Cancel
+                              </Button>
+                              <Button type="submit">Submit Request</Button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardContent>
                 </Card>
