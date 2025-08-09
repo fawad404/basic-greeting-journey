@@ -57,28 +57,25 @@ export default function TopUpHistory() {
 
         let calculatedBalance = 0
         if (allPayments) {
-          // First calculate total from all approved top-ups (what admin entered as top-up amount)
-          const approvedTopUps = allPayments.filter(p => 
-            p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
+          // Add crypto deposits (admin-entered top-up amounts)
+          const cryptoDeposits = allPayments.filter(p => 
+            !p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
           )
-          const topUpBalance = approvedTopUps.reduce((sum, payment) => sum + payment.amount, 0)
+          const cryptoBalance = cryptoDeposits.reduce((sum, payment) => {
+            // For crypto deposits, amount is the admin-entered "Total Top-up Amount"
+            return sum + payment.amount
+          }, 0)
           
-          // Then subtract pending top-ups (original request amounts)
+          // Subtract pending top-ups (amounts deducted from balance when request was made)
           const pendingTopUps = allPayments.filter(p => 
             p.transaction_id.startsWith('TOPUP-') && p.status === 'pending'
           )
           const pendingAmount = pendingTopUps.reduce((sum, payment) => sum + payment.amount, 0)
           
-          // Add crypto deposits
-          const cryptoDeposits = allPayments.filter(p => 
-            !p.transaction_id.startsWith('TOPUP-') && p.status === 'approved'
-          )
-          const cryptoBalance = cryptoDeposits.reduce((sum, payment) => {
-            const fee = payment.fee || 0
-            return sum + (payment.amount - fee)
-          }, 0)
+          // Note: Approved top-ups don't add to balance - they just remove the pending deduction
+          // The user's balance was already reduced when they made the top-up request
           
-          calculatedBalance = topUpBalance + cryptoBalance - pendingAmount
+          calculatedBalance = cryptoBalance - pendingAmount
         }
 
         setUserBalance(calculatedBalance)

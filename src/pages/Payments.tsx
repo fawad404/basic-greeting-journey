@@ -151,33 +151,8 @@ export default function Payments() {
 
       if (paymentError) throw paymentError
 
-      // Update or create user balance with the top-up amount
-      const { data: existingBalance, error: fetchError } = await supabase
-        .from('user_balances')
-        .select('*')
-        .eq('user_id', selectedPayment.user_id)
-        .single()
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError
-      }
-
-      if (existingBalance) {
-        // Update existing balance by adding the top-up amount
-        const { error: updateError } = await supabase
-          .from('user_balances')
-          .update({ balance: existingBalance.balance + topUpAmountValue })
-          .eq('user_id', selectedPayment.user_id)
-
-        if (updateError) throw updateError
-      } else {
-        // Create new balance record with the top-up amount
-        const { error: insertError } = await supabase
-          .from('user_balances')
-          .insert({ user_id: selectedPayment.user_id, balance: topUpAmountValue })
-
-        if (insertError) throw insertError
-      }
+      // Note: Balance calculation is handled dynamically in BalanceContext
+      // No need to update user_balances table here
 
       const totalTransferAmount = topUpAmountValue + feeAmount
 
