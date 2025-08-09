@@ -45,8 +45,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
           calculatedBalance = payments.reduce((sum, payment) => {
             const fee = payment.fee || 0
             if (payment.transaction_id.startsWith('TOPUP-')) {
-              // For approved top-ups, add back the amount minus fee
-              return sum + (payment.amount - fee)
+              // For approved top-ups, this is money going OUT - don't add to balance
+              return sum
             } else {
               // For crypto deposits, add to balance minus fee
               return sum + (payment.amount - fee)

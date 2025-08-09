@@ -146,7 +146,7 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
             <Label>Available Balance</Label>
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-lg font-semibold">
-                ${balanceLoading ? "Loading..." : userBalance.toFixed(2)}
+                ${balanceLoading ? "Loading..." : (balance?.toFixed(2) || '0.00')}
               </p>
             </div>
           </div>
