@@ -105,7 +105,7 @@ This is a test notification from your payment system bot.
 💰 <b>Amount:</b> $100.00
 📝 <b>Note:</b> This is a test top-up request
 
-⏰ <b>Time:</b> ${new Date().toLocaleString()}
+⏰ <b>Time:</b> ${new Date().toLocaleString('en-CA', { timeZone: 'America/Toronto' })}
 
 ✅ <b>Status:</b> Bot is working correctly!`
 

@@ -15,6 +15,8 @@ import { Pencil, Plus } from "lucide-react"
 interface User {
   id: string;
   email: string;
+  username?: string;
+  telegram_username?: string;
 }
 
 interface AdAccount {
@@ -67,7 +69,7 @@ export default function UserAccounts() {
       // Fetch users
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, email')
+        .select('id, email, username, telegram_username')
         .order('email')
 
       if (usersError) {
@@ -259,7 +261,7 @@ export default function UserAccounts() {
                         value={user.id}
                         className="bg-background hover:bg-accent focus:bg-accent"
                       >
-                        {user.email}
+                        {user.username || user.telegram_username || user.email}
                       </SelectItem>
                     ))}
                   </SelectContent>
