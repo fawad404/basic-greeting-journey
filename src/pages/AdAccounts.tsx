@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { Search, MapPin, Clock, Calendar } from "lucide-react"
 
 interface AdAccount {
   id: string;
@@ -83,7 +84,6 @@ export default function AdAccounts() {
     fetchAccounts()
   }, [fetchAccounts])
 
-
   const filteredAccounts = accounts.filter(account =>
     account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     account.account_id.includes(searchTerm)
@@ -147,90 +147,132 @@ export default function AdAccounts() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left sidebar - Account List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Ad Accounts</h2>
-            <span className="text-sm text-muted-foreground">{accounts.length}</span>
-          </div>
-          
-          <div className="relative">
-            <Input
-              placeholder="Search accounts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-3"
-            />
-          </div>
+    <div className="min-h-screen bg-background">
+      <div className="flex">
+        {/* Left Sidebar - Account List */}
+        <div className="w-96 border-r border-border bg-card">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-foreground">Ad Accounts</h2>
+              <Badge variant="secondary" className="text-xs px-2 py-1">
+                {accounts.length}
+              </Badge>
+            </div>
+            
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search accounts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-background border-input"
+              />
+            </div>
 
-          <ScrollArea className="h-96">
-            {filteredAccounts.map((account) => (
-              <Card 
-                key={account.id} 
-                className={`mb-3 cursor-pointer transition-colors ${
-                  selectedAccount?.id === account.id ? 'border-primary bg-accent' : ''
-                }`}
-                onClick={() => setSelectedAccount(account)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-sm">{account.account_name}</h3>
-                    <Badge variant={account.status === "active" ? "default" : "destructive"}>
-                      {account.status}
-                    </Badge>
+            <ScrollArea className="h-[calc(100vh-200px)]">
+              <div className="space-y-3">
+                {filteredAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 border ${
+                      selectedAccount?.id === account.id 
+                        ? 'border-primary bg-primary/10 shadow-md' 
+                        : 'border-border bg-card hover:bg-accent/50'
+                    }`}
+                    onClick={() => setSelectedAccount(account)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-sm text-foreground leading-tight">
+                        {account.account_name}
+                      </h3>
+                      <Badge 
+                        variant={account.status === "active" ? "default" : "destructive"}
+                        className="text-xs ml-2"
+                      >
+                        {account.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">{account.account_id}</p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs font-medium text-foreground">${account.budget.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(account.created_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-1">{account.account_id}</p>
-                  <p className="text-xs font-medium">${account.budget.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(account.created_at).toLocaleDateString()}</p>
-                </CardContent>
-              </Card>
-            ))}
-            {filteredAccounts.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                {accounts.length === 0 ? "No ad accounts found. Contact admin to get an account assigned." : "No accounts match your search."}
+                ))}
+                {filteredAccounts.length === 0 && (
+                  <div className="text-center text-muted-foreground py-12">
+                    <p className="text-sm">
+                      {accounts.length === 0 
+                        ? "No ad accounts found. Contact admin to get an account assigned." 
+                        : "No accounts match your search."
+                      }
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </ScrollArea>
+            </ScrollArea>
+          </div>
         </div>
 
-        {/* Right side - Account Details */}
-        <div className="lg:col-span-2">
+        {/* Right Side - Account Details */}
+        <div className="flex-1 bg-background">
           {selectedAccount ? (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold">{selectedAccount.account_name}</h1>
-                  <p className="text-muted-foreground">Account ID: {selectedAccount.account_id}</p>
-                </div>
+            <div className="p-8">
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-foreground mb-2">
+                  {selectedAccount.account_name}
+                </h1>
+                <p className="text-muted-foreground text-lg">
+                  Account ID: {selectedAccount.account_id}
+                </p>
               </div>
 
-              <div className="grid gap-6">
-                {/* Account Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Account Information</CardTitle>
+              <div className="space-y-6">
+                {/* Account Information Card */}
+                <Card className="border-border">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-foreground">Account Information</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm text-muted-foreground">Creation Date:</p>
-                        <p className="font-medium">{new Date(selectedAccount.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Creation Date:</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {new Date(selectedAccount.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          })}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Topup Amount:</p>
-                        <p className="font-medium">${selectedAccount.total_topup_amount}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Total Topup Amount:</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          ${selectedAccount.total_topup_amount}
+                        </p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Access Email:</p>
-                      <p className="font-medium">{selectedAccount.access_email}</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Access Email:</p>
+                      <p className="text-lg font-semibold text-foreground">
+                        {selectedAccount.access_email}
+                      </p>
                     </div>
-                    <div className="flex gap-3">
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4">
                       <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
                         <DialogTrigger asChild>
-                          <Button>Top-Up</Button>
+                          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            Top-Up
+                          </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
@@ -262,7 +304,9 @@ export default function AdAccounts() {
                       {selectedAccount.status === 'suspended' && (
                         <Dialog open={isReplaceOpen} onOpenChange={setIsReplaceOpen}>
                           <DialogTrigger asChild>
-                            <Button variant="outline">Replace</Button>
+                            <Button variant="outline" className="border-muted-foreground">
+                              Replace
+                            </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
@@ -290,65 +334,91 @@ export default function AdAccounts() {
                         </Dialog>
                       )}
 
-                      <Button variant="outline">Change Access</Button>
+                      <Button variant="outline" className="border-muted-foreground">
+                        Change Access
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Location & Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="text-blue-500">🌐</span>
+                {/* Location & Settings Card */}
+                <Card className="border-border">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
                       Location & Settings
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm text-muted-foreground">Country</p>
-                        <p className="font-medium">{selectedAccount.country}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Country</p>
+                        <p className="text-lg font-semibold text-foreground">{selectedAccount.country}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Timezone</p>
-                        <p className="font-medium">{selectedAccount.timezone}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Timezone</p>
+                        <p className="text-lg font-semibold text-foreground">{selectedAccount.timezone}</p>
                       </div>
                     </div>
-                    <div className="mt-4">
-                      <p className="text-sm text-muted-foreground">Currency</p>
-                      <p className="font-medium">{selectedAccount.currency}</p>
+                    <div className="mt-6">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Currency</p>
+                      <p className="text-lg font-semibold text-foreground">{selectedAccount.currency}</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Timeline */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="text-blue-500">⏰</span>
+                {/* Timeline Card */}
+                <Card className="border-border">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
                       Timeline
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div>
-                        <p className="text-sm text-muted-foreground">Created Date</p>
-                        <p className="font-medium">{new Date(selectedAccount.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Created Date</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {new Date(selectedAccount.created_at).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Last Updated</p>
-                        <p className="font-medium">{new Date(selectedAccount.updated_at).toLocaleDateString()}</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Last Updated</p>
+                        <p className="text-lg font-semibold text-foreground">
+                          {new Date(selectedAccount.updated_at).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-96">
-              <p className="text-muted-foreground">
-                {accounts.length === 0 ? "No ad accounts found. Contact admin to get an account assigned." : "Select an account to view details."}
-              </p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-xl text-muted-foreground mb-2">
+                  {accounts.length === 0 
+                    ? "No ad accounts found" 
+                    : "Select an account to view details"
+                  }
+                </p>
+                {accounts.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Contact admin to get an account assigned.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

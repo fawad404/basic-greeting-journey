@@ -230,7 +230,7 @@ export default function UserAccounts() {
               Add New Account
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingAccount ? 'Edit Ad Account' : 'Add New Ad Account'}
@@ -301,6 +301,44 @@ export default function UserAccounts() {
                   onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
                   placeholder="500.00"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  placeholder="N/A"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="timezone">Timezone</Label>
+                <Input
+                  id="timezone"
+                  value={formData.timezone}
+                  onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                  placeholder="UTC"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select 
+                  value={formData.currency} 
+                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="CAD">CAD</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
