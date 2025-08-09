@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
@@ -33,6 +34,7 @@ export default function Payments() {
   const [editAmount, setEditAmount] = useState("")
   const [editTxHash, setEditTxHash] = useState("")
   const [editNote, setEditNote] = useState("")
+  const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
   const { toast } = useToast()
 
   const fetchPayments = async () => {
@@ -83,6 +85,7 @@ export default function Payments() {
     setEditAmount(payment.amount.toString())
     setEditTxHash(payment.transaction_id)
     setEditNote(payment.note || "")
+    setEditStatus(payment.status)
     setFee(payment.fee?.toString() || "")
     setEditDialogOpen(true)
   }
@@ -94,14 +97,15 @@ export default function Payments() {
       const feeAmount = fee ? parseFloat(fee) : null
       const amountValue = parseFloat(editAmount)
 
-      // Update payment details
+      // Update payment details including status
       const { error: paymentError } = await supabase
         .from('payments')
         .update({ 
           amount: amountValue,
           transaction_id: editTxHash,
           note: editNote || null,
-          fee: feeAmount
+          fee: feeAmount,
+          status: editStatus
         })
         .eq('id', selectedPayment.id)
 
@@ -302,6 +306,9 @@ export default function Payments() {
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Approve Payment</DialogTitle>
+                              <DialogDescription>
+                                Set the fee and top-up amount for this payment approval.
+                              </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
@@ -457,10 +464,13 @@ export default function Payments() {
                             Edit
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit Payment</DialogTitle>
-                          </DialogHeader>
+                         <DialogContent>
+                           <DialogHeader>
+                             <DialogTitle>Edit Payment</DialogTitle>
+                             <DialogDescription>
+                               Edit payment details including amount, transaction hash, note, fee, and status.
+                             </DialogDescription>
+                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
                               <Label htmlFor="editAmount">Amount</Label>
@@ -481,15 +491,28 @@ export default function Payments() {
                                 onChange={(e) => setEditTxHash(e.target.value)}
                               />
                             </div>
-                            <div>
-                              <Label htmlFor="editNote">Note</Label>
-                              <Input
-                                id="editNote"
-                                placeholder="Note"
-                                value={editNote}
-                                onChange={(e) => setEditNote(e.target.value)}
-                              />
-                            </div>
+                             <div>
+                               <Label htmlFor="editNote">Note</Label>
+                               <Input
+                                 id="editNote"
+                                 placeholder="Note"
+                                 value={editNote}
+                                 onChange={(e) => setEditNote(e.target.value)}
+                               />
+                             </div>
+                             <div>
+                               <Label htmlFor="editStatus">Status</Label>
+                               <Select value={editStatus} onValueChange={(value: 'pending' | 'approved' | 'rejected') => setEditStatus(value)}>
+                                 <SelectTrigger>
+                                   <SelectValue placeholder="Select status" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="pending">Pending</SelectItem>
+                                   <SelectItem value="approved">Approved</SelectItem>
+                                   <SelectItem value="rejected">Rejected</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                             </div>
                             <div>
                               <Label htmlFor="editFee">Fee</Label>
                               <Input
