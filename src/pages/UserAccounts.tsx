@@ -272,7 +272,7 @@ export default function UserAccounts() {
                   id="account_name"
                   value={formData.account_name}
                   onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                  placeholder="e.g., BR06 - Burner - 1945 - Lxxx"
+                  placeholder="e.g., Ads Forilla - 001 - 1945 - Lxxx"
                   required
                 />
               </div>
