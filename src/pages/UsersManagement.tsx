@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface User {
@@ -200,6 +200,7 @@ export default function UsersManagement() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -213,6 +214,19 @@ export default function UsersManagement() {
                   </TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {user.role === 'customer' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/user-dashboard/${user.id}`, '_blank')}
+                        className="flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View Dashboard
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

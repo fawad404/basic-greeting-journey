@@ -32,6 +32,9 @@ const baseNavigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Tickets", url: "/tickets", icon: Ticket },
   { title: "Ad Accounts", url: "/ad-accounts", icon: Users },
+]
+
+const userOnlyNavigationItems = [
   { title: "Add Balance", url: "/add-balance", icon: CreditCard },
   { title: "Top-up History", url: "/top-up-history", icon: Calendar },
 ]
@@ -91,7 +94,7 @@ export function AppSidebar() {
   
   const navigationItems = isAdmin 
     ? [...baseNavigationItems, ...adminNavigationItems]
-    : baseNavigationItems
+    : [...baseNavigationItems, ...userOnlyNavigationItems]
 
   const isActive = (path: string) => {
     if (path === "/") {
