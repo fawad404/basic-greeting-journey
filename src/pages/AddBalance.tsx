@@ -94,17 +94,11 @@ export default function AddBalance() {
 
         setPayments(data || [])
 
-        // Calculate user balance: For crypto deposits, balance = (amount - fee), for top-ups, balance is deducted
+        // Calculate user balance: Sum of all approved "Total Top-up Amount" values only
         const approvedPayments = (data || []).filter(payment => payment.status === 'approved')
         const userBalance = approvedPayments.reduce((sum, payment) => {
-          const fee = payment.fee || 0
-          if (payment.transaction_id.startsWith('TOPUP-')) {
-            // For top-ups, deduct from balance
-            return sum - payment.amount
-          } else {
-            // For crypto deposits, add to balance minus fee
-            return sum + (payment.amount - fee)
-          }
+          // For all approved payments, add only the amount (which is the Total Top-up Amount after admin approval)
+          return sum + payment.amount
         }, 0)
         setTotalTransferAmount(userBalance)
       }
