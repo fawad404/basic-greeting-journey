@@ -88,15 +88,6 @@ export default function TopUpRequests() {
     const topUp = parseFloat(topUpAmount) || 0
     const fee = parseFloat(feeAmount) || 0
 
-    if (total !== topUp + fee) {
-      toast({
-        title: "Invalid Amounts",
-        description: "Total amount must equal top-up amount plus fee",
-        variant: "destructive",
-      })
-      return
-    }
-
     try {
       const { error } = await supabase
         .from('payments')
@@ -335,23 +326,16 @@ export default function TopUpRequests() {
                 <div className="mt-3 p-3 bg-background rounded border">
                   <div className="text-sm">
                     <div className="flex justify-between">
-                      <span>Total Received:</span>
+                      <span>Total Transfer Amount:</span>
                       <span>${parseFloat(totalAmount).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Client Gets:</span>
+                      <span>Client Gets (Top-up):</span>
                       <span>${parseFloat(topUpAmount).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Your Fee:</span>
+                      <span>Admin Fee:</span>
                       <span>${parseFloat(feeAmount).toFixed(2)}</span>
-                    </div>
-                    <hr className="my-2" />
-                    <div className="flex justify-between font-medium">
-                      <span>Calculation:</span>
-                      <span className={parseFloat(totalAmount) === (parseFloat(topUpAmount) + parseFloat(feeAmount)) ? "text-success" : "text-destructive"}>
-                        ${(parseFloat(topUpAmount) + parseFloat(feeAmount)).toFixed(2)}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -365,7 +349,7 @@ export default function TopUpRequests() {
               <Button 
                 onClick={handleConfirmApproval} 
                 className="flex-1 bg-success hover:bg-success/80"
-                disabled={!totalAmount || !topUpAmount || !feeAmount || parseFloat(totalAmount) !== (parseFloat(topUpAmount) + parseFloat(feeAmount))}
+                disabled={!totalAmount || !topUpAmount || !feeAmount}
               >
                 Approve Payment
               </Button>
