@@ -27,6 +27,7 @@ interface AdAccount {
   status: string;
   budget: number;
   total_topup_amount: number;
+  total_topup_with_fees: number;
   access_email: string;
   country: string;
   timezone: string;
@@ -115,15 +116,40 @@ export default function UserAccounts() {
         throw accountsError
       }
 
+      // Fetch all approved payments to calculate total top-up with fees for each user
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select('user_id, amount, fee')
+        .eq('status', 'approved')
+
+      if (paymentsError) {
+        console.error('Error fetching payments:', paymentsError)
+        throw paymentsError
+      }
+
+      // Calculate total top-up with fees for each user
+      const userTotals = new Map<string, number>()
+      paymentsData?.forEach(payment => {
+        const currentTotal = userTotals.get(payment.user_id) || 0
+        const paymentTotal = (payment.amount || 0) + (payment.fee || 0)
+        userTotals.set(payment.user_id, currentTotal + paymentTotal)
+      })
+
+      // Add the calculated totals to account data
+      const accountsWithTotals = (accountsData as any)?.map((account: any) => ({
+        ...account,
+        total_topup_with_fees: userTotals.get(account.user_id) || 0
+      })) || []
+
       console.log('Fetched users:', usersData)
-      console.log('Fetched accounts:', accountsData)
+      console.log('Fetched accounts:', accountsWithTotals)
       console.log('Current user is admin:', isAdmin)
       console.log('Auth loading state:', authLoading)
       
       const customerUsers = usersData || []
       setUsers(customerUsers)
       setFilteredUsers(customerUsers)
-      setAccounts((accountsData as any) || [])
+      setAccounts(accountsWithTotals)
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({
@@ -518,7 +544,7 @@ export default function UserAccounts() {
                 <TableHead>Account ID</TableHead>
                 <TableHead>User Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Total Top-up</TableHead>
+                <TableHead>Total Top-up Amount (Incl. Fees)</TableHead>
                 <TableHead>Access Email</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead>Actions</TableHead>
@@ -535,7 +561,7 @@ export default function UserAccounts() {
                       {account.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>${account.total_topup_amount.toFixed(2)}</TableCell>
+                  <TableCell>${account.total_topup_with_fees.toFixed(2)}</TableCell>
                   <TableCell>{account.access_email}</TableCell>
                   <TableCell>{new Date(account.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
