@@ -34,10 +34,9 @@ interface AdAccount {
 }
 
 export default function UserAccounts() {
+  // ALL hooks declared first - never conditional
   const { user, isAdmin, loading: authLoading } = useAuth()
   const { toast } = useToast()
-  
-  // Declare ALL useState hooks first - always in the same order
   const [accounts, setAccounts] = useState<AdAccount[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,39 +54,26 @@ export default function UserAccounts() {
     currency: 'USD'
   })
 
-  // Wait for auth to load before checking admin status
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-
-  // Add admin check only after auth is loaded
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">You need admin privileges to access this page.</p>
-          <p className="text-xs text-muted-foreground mt-2">Current role: {user?.email}</p>
-        </div>
-      </div>
-    )
-  }
-
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (!authLoading && isAdmin) {
+      fetchData()
+    }
+  }, [authLoading, isAdmin])
 
   const fetchData = async () => {
     try {
+      console.log('Fetching users and accounts...')
+      
       // Fetch users
-      const { data: usersData } = await supabase
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, email')
         .order('email')
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+        throw usersError
+      }
 
       // Fetch ad accounts with user info
       const { data: accountsData, error: accountsError } = await supabase
@@ -103,7 +89,9 @@ export default function UserAccounts() {
         throw accountsError
       }
 
+      console.log('Fetched users:', usersData)
       console.log('Fetched accounts:', accountsData)
+      
       setUsers(usersData || [])
       setAccounts((accountsData as any) || [])
     } catch (error) {
@@ -168,6 +156,7 @@ export default function UserAccounts() {
       resetForm()
       fetchData()
     } catch (error: any) {
+      console.error('Error saving account:', error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -197,10 +186,31 @@ export default function UserAccounts() {
     resetForm()
   }
 
-  if (loading) {
+  // Early returns after all hooks are declared
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
+          <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+          <p className="text-xs text-muted-foreground mt-2">Current user: {user?.email}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading data...</div>
       </div>
     )
   }
@@ -324,7 +334,7 @@ export default function UserAccounts() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Ad Accounts</CardTitle>
+          <CardTitle>All Ad Accounts ({accounts.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
