@@ -2,3 +2,6 @@ project_id = "hywkmccpblatkfsbnapn"
 
 [functions.telegram-callback]
 verify_jwt = false
+
+[functions.update-telegram-message]
+verify_jwt = false

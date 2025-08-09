@@ -9,6 +9,28 @@ import { Button } from "@/components/ui/button"
 import { TestTelegramButton } from "@/components/TestTelegramButton"
 import { SetupTelegramWebhookButton } from "@/components/SetupTelegramWebhookButton"
 
+// Function to update Telegram message when status changes
+const updateTelegramMessage = async (transactionId: string, status: 'approved' | 'rejected', userEmail: string, amount: number) => {
+  try {
+    const { error } = await supabase.functions.invoke('update-telegram-message', {
+      body: {
+        transactionId,
+        status,
+        userEmail,
+        amount
+      }
+    })
+
+    if (error) {
+      console.error('Error updating Telegram message:', error)
+    } else {
+      console.log(`✅ Telegram message updated for ${transactionId} - ${status}`)
+    }
+  } catch (error) {
+    console.error('Error calling update-telegram-message function:', error)
+  }
+}
+
 interface TopUpRequest {
   id: string
   user_id: string
@@ -85,6 +107,9 @@ export default function TopUpRequests() {
 
       console.log('✅ APPROVAL: Payment status updated to approved - balance remains unchanged')
 
+      // Update Telegram message
+      await updateTelegramMessage(request.transaction_id, 'approved', request.user_email, request.amount)
+
       toast({
         title: "Request Approved",
         description: `Top-up request approved successfully. User balance calculation handled automatically.`,
@@ -102,7 +127,7 @@ export default function TopUpRequests() {
     }
   }
 
-  const handleReject = async (requestId: string) => {
+  const handleReject = async (request: TopUpRequest) => {
     try {
       console.log('⚠️ REJECTION: Only updating payment status to rejected')
       
@@ -112,17 +137,21 @@ export default function TopUpRequests() {
           status: 'rejected',
           updated_at: new Date().toISOString()
         })
-        .eq('id', requestId)
+        .eq('id', request.id)
 
       if (error) throw error
 
       console.log('✅ REJECTION: Payment status updated to rejected')
+
+      // Update Telegram message
+      await updateTelegramMessage(request.transaction_id, 'rejected', request.user_email!, request.amount)
 
       toast({
         title: "Request Rejected",
         description: `Top-up request has been rejected`,
       })
 
+      // Refresh the requests list
       fetchRequests()
     } catch (error) {
       console.error('Error rejecting request:', error)
@@ -221,7 +250,7 @@ export default function TopUpRequests() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleReject(request.id)}
+                        onClick={() => handleReject(request)}
                       >
                         <XCircle className="h-3 w-3 mr-1" />
                         Reject

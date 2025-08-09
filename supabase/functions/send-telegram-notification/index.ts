@@ -56,18 +56,8 @@ function createInlineKeyboard(transactionId: string) {
     inline_keyboard: [
       [
         {
-          text: "✅ Approve Top-up",
-          callback_data: `approve_${transactionId}`
-        },
-        {
-          text: "❌ Reject Top-up", 
-          callback_data: `reject_${transactionId}`
-        }
-      ],
-      [
-        {
-          text: "👁️ View Top-up",
-          url: "https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests"
+          text: "👁️ View Request",
+          callback_data: `view_${transactionId}`
         }
       ]
     ]

@@ -35,114 +35,24 @@ Deno.serve(async (req) => {
       
       console.log('Callback data:', callbackData)
       
-      if (callbackData.startsWith('approve_') || callbackData.startsWith('reject_')) {
-        const action = callbackData.split('_')[0]
-        const transactionId = callbackData.substring(action.length + 1)
+      if (callbackData.startsWith('view_')) {
+        const transactionId = callbackData.substring(5) // Remove 'view_' prefix
         
-        console.log(`Processing ${action} for transaction:`, transactionId)
+        console.log(`Handling view request for transaction:`, transactionId)
         
-        // Update payment status in database
-        const newStatus = action === 'approve' ? 'approved' : 'rejected'
-        const { error } = await supabase
-          .from('payments')
-          .update({ 
-            status: newStatus,
-            updated_at: new Date().toISOString()
-          })
-          .eq('transaction_id', transactionId)
-
-        if (error) {
-          console.error('Database error:', error)
-          // Send error response to Telegram
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              callback_query_id: body.callback_query.id,
-              text: `❌ Error ${action === 'approve' ? 'approving' : 'rejecting'} top-up request`,
-              show_alert: true
-            })
-          })
-          return new Response('Database error', { status: 500 })
-        }
-
-        // Get payment details for notification
-        const { data: paymentData } = await supabase
-          .from('payments')
-          .select('amount, user_id')
-          .eq('transaction_id', transactionId)
-          .single()
-
-        let userEmail = 'Unknown'
-        if (paymentData) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('email')
-            .eq('id', paymentData.user_id)
-            .single()
-          userEmail = userData?.email || 'Unknown'
-        }
-
-        // Edit the message to show the action taken
-        const emoji = action === 'approve' ? '✅' : '❌'
-        const actionText = action === 'approve' ? 'APPROVED' : 'REJECTED'
-        const updatedText = body.callback_query.message.text + `\n\n${emoji} <b>Status: ${actionText}</b>`
-        
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            message_id: messageId,
-            text: updatedText,
-            parse_mode: 'HTML'
-          })
-        })
-
-        // Send confirmation response
+        // Send response to user and redirect to specific top-up request
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             callback_query_id: body.callback_query.id,
-            text: `${emoji} Top-up request ${actionText.toLowerCase()} successfully!`,
-            show_alert: true
+            text: "Opening top-up request...",
+            show_alert: false,
+            url: `https://hywkmccpblatkfsbnapn.supabase.co/top-up-requests?transaction=${transactionId}`
           })
         })
-
-        // Send separate notification message about the action
-        const notificationMessage = action === 'approve' 
-          ? `✅ <b>TOP-UP APPROVED</b>
-
-👤 <b>User:</b> ${userEmail}
-💰 <b>Amount:</b> $${paymentData?.amount || 'Unknown'}
-🆔 <b>Transaction ID:</b> ${transactionId}
-
-✅ <b>Status:</b> The top-up request has been successfully approved and processed.
-
-⏰ <b>Processed at:</b> ${new Date().toLocaleString()}`
-          : `❌ <b>TOP-UP REJECTED</b>
-
-👤 <b>User:</b> ${userEmail}
-💰 <b>Amount:</b> $${paymentData?.amount || 'Unknown'}
-🆔 <b>Transaction ID:</b> ${transactionId}
-
-❌ <b>Status:</b> The top-up request has been rejected.
-
-⏰ <b>Processed at:</b> ${new Date().toLocaleString()}`
-
-        // Send the notification message
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: notificationMessage,
-            parse_mode: 'HTML'
-          })
-        })
-
-        console.log(`✅ Successfully ${action}ed transaction ${transactionId}`)
+        
+        console.log(`✅ Redirected to view transaction ${transactionId}`)
       }
     }
 
