@@ -42,6 +42,13 @@ export default function Dashboard() {
     accountCount: 0,
     totalSpending: 0
   })
+  const [adminMetrics, setAdminMetrics] = useState({
+    totalAccounts: 0,
+    totalTopupAmount: 0,
+    suspendedAccounts: 0,
+    totalSpending: 0,
+    totalServiceFees: 0
+  })
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -99,8 +106,67 @@ export default function Dashboard() {
       }
     }
 
+    const fetchAdminMetrics = async () => {
+      if (!user || !isAdmin) return
+
+      setIsLoadingMetrics(true)
+
+      try {
+        // Get total number of user accounts
+        const { data: totalUsers } = await supabase
+          .from('users')
+          .select('id')
+
+        // Get all approved payments
+        const { data: allPayments } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('status', 'approved')
+
+        // Get suspended ad accounts
+        const { data: suspendedAccounts } = await supabase
+          .from('ad_accounts')
+          .select('id')
+          .eq('status', 'suspended')
+
+        let totalTopupAmount = 0
+        let totalSpending = 0
+        let totalServiceFees = 0
+
+        if (allPayments) {
+          allPayments.forEach(payment => {
+            if (payment.transaction_id.startsWith('TOPUP-')) {
+              // Sum all top-up amounts (spending)
+              totalSpending += payment.amount
+            } else {
+              // Sum all crypto deposit amounts
+              totalTopupAmount += payment.amount
+            }
+            // Sum all fees
+            if (payment.fee) {
+              totalServiceFees += payment.fee
+            }
+          })
+        }
+
+        setAdminMetrics({
+          totalAccounts: totalUsers ? totalUsers.length : 0,
+          totalTopupAmount,
+          suspendedAccounts: suspendedAccounts ? suspendedAccounts.length : 0,
+          totalSpending,
+          totalServiceFees
+        })
+      } catch (error) {
+        console.error('Error fetching admin metrics:', error)
+      } finally {
+        setIsLoadingMetrics(false)
+      }
+    }
+
     if (user && !isAdmin) {
       fetchMetrics()
+    } else if (user && isAdmin) {
+      fetchAdminMetrics()
     }
   }, [user, isAdmin])
 
@@ -113,40 +179,83 @@ export default function Dashboard() {
       </div>
 
       {/* Financial Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {isLoadingMetrics ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 bg-muted animate-pulse rounded-lg"></div>
-          ))
-        ) : (
-          <>
-            <MetricCard
-              title="Total Transfer Amount"
-              value={`$${metrics.totalTransferAmount.toFixed(2)}`}
-              icon={<DollarSign className="h-4 w-4 text-success" />}
-              className="border-l-4 border-l-success"
-            />
-            <MetricCard
-              title="Total Top-up Amount"
-              value={`$${metrics.totalTopupAmount.toFixed(2)}`}
-              icon={<CreditCard className="h-4 w-4 text-primary" />}
-              className="border-l-4 border-l-primary"
-            />
-            <MetricCard
-              title="Ad Accounts"
-              value={metrics.accountCount.toString()}
-              icon={<Building2 className="h-4 w-4 text-warning" />}
-              className="border-l-4 border-l-warning"
-            />
-            <MetricCard
-              title="Total Spending"
-              value={`$${metrics.totalSpending.toFixed(2)}`}
-              icon={<TrendingUp className="h-4 w-4 text-success" />}
-              className="border-l-4 border-l-success"
-            />
-          </>
-        )}
-      </div>
+      {isAdmin ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          {isLoadingMetrics ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="h-32 bg-muted animate-pulse rounded-lg"></div>
+            ))
+          ) : (
+            <>
+              <MetricCard
+                title="Accounts Created"
+                value={adminMetrics.totalAccounts.toString()}
+                icon={<Users className="h-4 w-4 text-primary" />}
+                className="border-l-4 border-l-primary"
+              />
+              <MetricCard
+                title="Total Top-ups (Amount)"
+                value={`$${adminMetrics.totalTopupAmount.toFixed(2)}`}
+                icon={<CreditCard className="h-4 w-4 text-success" />}
+                className="border-l-4 border-l-success"
+              />
+              <MetricCard
+                title="Ended Account Budgets (Suspended)"
+                value={adminMetrics.suspendedAccounts.toString()}
+                icon={<Shield className="h-4 w-4 text-destructive" />}
+                className="border-l-4 border-l-destructive"
+              />
+              <MetricCard
+                title="Total Spending (Amount)"
+                value={`$${adminMetrics.totalSpending.toFixed(2)}`}
+                icon={<TrendingUp className="h-4 w-4 text-warning" />}
+                className="border-l-4 border-l-warning"
+              />
+              <MetricCard
+                title="Service Fee (Profit)"
+                value={`$${adminMetrics.totalServiceFees.toFixed(2)}`}
+                icon={<DollarSign className="h-4 w-4 text-accent" />}
+                className="border-l-4 border-l-accent"
+              />
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {isLoadingMetrics ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-32 bg-muted animate-pulse rounded-lg"></div>
+            ))
+          ) : (
+            <>
+              <MetricCard
+                title="Total Transfer Amount"
+                value={`$${metrics.totalTransferAmount.toFixed(2)}`}
+                icon={<DollarSign className="h-4 w-4 text-success" />}
+                className="border-l-4 border-l-success"
+              />
+              <MetricCard
+                title="Total Top-up Amount"
+                value={`$${metrics.totalTopupAmount.toFixed(2)}`}
+                icon={<CreditCard className="h-4 w-4 text-primary" />}
+                className="border-l-4 border-l-primary"
+              />
+              <MetricCard
+                title="Ad Accounts"
+                value={metrics.accountCount.toString()}
+                icon={<Building2 className="h-4 w-4 text-warning" />}
+                className="border-l-4 border-l-warning"
+              />
+              <MetricCard
+                title="Total Spending"
+                value={`$${metrics.totalSpending.toFixed(2)}`}
+                icon={<TrendingUp className="h-4 w-4 text-success" />}
+                className="border-l-4 border-l-success"
+              />
+            </>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Total Spend Chart */}
