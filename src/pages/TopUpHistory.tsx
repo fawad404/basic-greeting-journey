@@ -49,20 +49,40 @@ export default function TopUpHistory() {
 
         setRequests((requestsData || []) as TopUpRequest[])
 
-        // Calculate current balance from approved non-topup payments
-        const { data: paymentsData } = await supabase
+        // Calculate current balance using the same logic as BalanceContext
+        const { data: allPayments } = await supabase
           .from('payments')
           .select('*')
           .eq('user_id', userData.id)
-          .eq('status', 'approved')
-          .not('transaction_id', 'like', 'TOPUP-%')
 
-        const balance = (paymentsData || []).reduce((sum, payment) => {
-          const fee = payment.fee || 0
-          return sum + (payment.amount - fee)
-        }, 0)
+        let calculatedBalance = 0
+        if (allPayments) {
+          calculatedBalance = allPayments.reduce((sum, payment) => {
+            const fee = payment.fee || 0
+            
+            if (payment.transaction_id.startsWith('TOPUP-')) {
+              // Top-up requests: deduct amount regardless of status
+              if (payment.status === 'pending') {
+                // Pending top-ups: deduct full amount
+                return sum - payment.amount
+              } else if (payment.status === 'approved') {
+                // Approved top-ups: deduct amount + any additional fee
+                return sum - payment.amount - fee
+              } else {
+                // Rejected top-ups: don't affect balance
+                return sum
+              }
+            } else {
+              // Crypto deposits: add to balance minus fee (only when approved)
+              if (payment.status === 'approved') {
+                return sum + (payment.amount - fee)
+              }
+              return sum
+            }
+          }, 0)
+        }
 
-        setUserBalance(balance)
+        setUserBalance(calculatedBalance)
       }
     } catch (error) {
       console.error('Error fetching top-up history:', error)
