@@ -41,47 +41,30 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch user roles and join with users table
-      const { data: userRolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      // Fetch all data in parallel
+      const [userRolesResponse, usersResponse, paymentsResponse, balancesResponse] = await Promise.all([
+        supabase.from('user_roles').select('user_id, role'),
+        supabase.from('users').select('*'),
+        supabase.from('payments').select('user_id, amount, fee, status'),
+        supabase.from('user_balances').select('user_id, balance')
+      ]);
 
-      if (rolesError) throw rolesError;
+      if (userRolesResponse.error) throw userRolesResponse.error;
+      
+      const userRolesData = userRolesResponse.data || [];
+      const usersData = usersResponse.data || [];
+      const paymentsData = paymentsResponse.data || [];
+      const balancesData = balancesResponse.data || [];
 
-      // Also fetch from users table to get additional info including new fields
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('*');
-
-      if (usersError) {
-        console.error('Error fetching from users table:', usersError);
-      }
-
-      // Fetch financial data for each user
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select('user_id, amount, fee, status');
-
-      if (paymentsError) {
-        console.error('Error fetching payments:', paymentsError);
-      }
-
-      // Fetch user balances
-      const { data: balancesData, error: balancesError } = await supabase
-        .from('user_balances')
-        .select('user_id, balance');
-
-      if (balancesError) {
-        console.error('Error fetching balances:', balancesError);
-      }
-
-      // Create maps for user data and financial calculations
-      const usersMap = new Map((usersData || []).map(u => [u.id, u]));
-      const balancesMap = new Map((balancesData || []).map(b => [b.user_id, b.balance]));
+      // Create maps for efficient lookups
+      const usersMap = new Map(usersData.map(u => [u.id, u]));
+      const balancesMap = new Map(balancesData.map(b => [b.user_id, Number(b.balance) || 0]));
       
       // Calculate financial data for each user
       const userFinancials = new Map();
-      (paymentsData || []).forEach(payment => {
+      paymentsData.forEach(payment => {
+        if (payment.status !== 'approved') return;
+        
         if (!userFinancials.has(payment.user_id)) {
           userFinancials.set(payment.user_id, {
             totalTopupAmount: 0,
@@ -91,17 +74,15 @@ export default function UsersManagement() {
         }
         
         const userFinancial = userFinancials.get(payment.user_id);
-        if (payment.status === 'approved') {
-          const amount = Number(payment.amount) || 0;
-          const fee = Number(payment.fee) || 0;
-          
-          userFinancial.totalTopupAmount += amount + fee;
-          userFinancial.feesPaid += fee;
-          userFinancial.approvedAmount += amount;
-        }
+        const amount = Number(payment.amount) || 0;
+        const fee = Number(payment.fee) || 0;
+        
+        userFinancial.approvedAmount += amount;
+        userFinancial.feesPaid += fee;
+        userFinancial.totalTopupAmount += amount + fee;
       });
 
-      // Build the final users list from user_roles as the source of truth
+      // Build the final users list
       const formattedUsers = userRolesData.map(userRole => {
         const userInfo = usersMap.get(userRole.user_id);
         const userFinancial = userFinancials.get(userRole.user_id) || {
@@ -110,6 +91,7 @@ export default function UsersManagement() {
           approvedAmount: 0
         };
         const currentBalance = balancesMap.get(userRole.user_id) || 0;
+        const amountSpent = Math.max(0, userFinancial.approvedAmount - currentBalance);
         
         return {
           id: userRole.user_id,
@@ -119,8 +101,8 @@ export default function UsersManagement() {
           created_at: userInfo?.created_at || new Date().toISOString(),
           role: userRole.role,
           totalTopupAmount: userFinancial.totalTopupAmount,
-          availableBalance: userFinancial.approvedAmount,
-          amountSpent: userFinancial.approvedAmount - Number(currentBalance),
+          availableBalance: currentBalance,
+          amountSpent: amountSpent,
           feesPaid: userFinancial.feesPaid,
         };
       });
