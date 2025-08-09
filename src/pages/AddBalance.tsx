@@ -93,12 +93,17 @@ export default function AddBalance() {
 
         setPayments(data || [])
 
-        // Calculate user balance: sum of (amount - fee - topup) for approved payments only
+        // Calculate user balance: For crypto deposits, balance = (amount - fee), for top-ups, balance is deducted
         const approvedPayments = (data || []).filter(payment => payment.status === 'approved')
         const userBalance = approvedPayments.reduce((sum, payment) => {
           const fee = payment.fee || 0
-          const topup = 0 // Top-up amount is 0 for now
-          return sum + (payment.amount - fee - topup)
+          if (payment.transaction_id.startsWith('TOPUP-')) {
+            // For top-ups, deduct from balance
+            return sum - payment.amount
+          } else {
+            // For crypto deposits, add to balance minus fee
+            return sum + (payment.amount - fee)
+          }
         }, 0)
         setTotalTransferAmount(userBalance)
       }
@@ -318,8 +323,13 @@ export default function AddBalance() {
                         {new Date(payment.created_at).toLocaleString()}
                       </div>
                     </td>
-                    <td className="py-4 px-2 font-medium">${payment.amount.toFixed(2)} USDT</td>
-                    <td className="py-4 px-2 font-medium">$0.00</td>
+                    <td className="py-4 px-2 font-medium">${totalTransferAmount.toFixed(2)} USDT</td>
+                    <td className="py-4 px-2 font-medium">
+                      {payment.transaction_id.startsWith('TOPUP-') 
+                        ? `$${(payment.amount - (payment.fee || 0)).toFixed(2)} USDT`
+                        : `$${payment.amount.toFixed(2)} USDT`
+                      }
+                    </td>
                     <td className="py-4 px-2 text-muted-foreground">{payment.fee ? `$${payment.fee} USDT` : '-'}</td>
                     <td className="py-4 px-2">
                       <Button 

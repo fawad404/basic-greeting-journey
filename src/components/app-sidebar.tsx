@@ -76,8 +76,13 @@ export function AppSidebar() {
           if (payments) {
             const calculatedBalance = payments.reduce((sum, payment) => {
               const fee = payment.fee || 0
-              const topup = 0 // Top-up amount is 0 for now
-              return sum + (payment.amount - fee - topup)
+              if (payment.transaction_id.startsWith('TOPUP-')) {
+                // For top-ups, deduct from balance
+                return sum - payment.amount
+              } else {
+                // For crypto deposits, add to balance minus fee
+                return sum + (payment.amount - fee)
+              }
             }, 0)
             setUserBalance(calculatedBalance)
           }

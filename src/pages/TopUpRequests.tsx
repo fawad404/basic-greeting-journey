@@ -6,13 +6,9 @@ import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface TopUpRequest {
   id: string
@@ -29,6 +25,9 @@ interface TopUpRequest {
 export default function TopUpRequests() {
   const [requests, setRequests] = useState<TopUpRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedRequest, setSelectedRequest] = useState<TopUpRequest | null>(null)
+  const [fee, setFee] = useState("")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const fetchRequests = async () => {
@@ -72,7 +71,49 @@ export default function TopUpRequests() {
     }
   }
 
-  const handleStatusUpdate = async (requestId: string, newStatus: 'approved' | 'rejected') => {
+  const handleApproval = (request: TopUpRequest) => {
+    setSelectedRequest(request)
+    setFee("")
+    setIsDialogOpen(true)
+  }
+
+  const handleConfirmApproval = async () => {
+    if (!selectedRequest) return
+
+    try {
+      const feeAmount = parseFloat(fee) || 0
+
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'approved',
+          fee: feeAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedRequest.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Request Approved",
+        description: `Top-up approved with fee: $${feeAmount.toFixed(2)}`,
+      })
+
+      setIsDialogOpen(false)
+      setSelectedRequest(null)
+      setFee("")
+      fetchRequests()
+    } catch (error) {
+      console.error('Error approving request:', error)
+      toast({
+        title: "Error",
+        description: "Failed to approve request",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleStatusUpdate = async (requestId: string, newStatus: 'rejected') => {
     try {
       const { error } = await supabase
         .from('payments')
@@ -89,7 +130,6 @@ export default function TopUpRequests() {
         description: `Request has been ${newStatus}`,
       })
 
-      // Refresh the requests list
       fetchRequests()
     } catch (error) {
       console.error('Error updating request status:', error)
@@ -173,7 +213,7 @@ export default function TopUpRequests() {
                       <Button
                         size="sm"
                         variant="default"
-                        onClick={() => handleStatusUpdate(request.id, 'approved')}
+                        onClick={() => handleApproval(request)}
                         className="bg-success hover:bg-success/80"
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -200,6 +240,51 @@ export default function TopUpRequests() {
           )}
         </CardContent>
       </Card>
+
+      {/* Fee Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Top-up Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>User Email</Label>
+                <div className="text-sm text-muted-foreground">{selectedRequest?.user_email}</div>
+              </div>
+              <div>
+                <Label>Requested Amount</Label>
+                <div className="text-sm text-muted-foreground">${selectedRequest?.amount.toFixed(2)}</div>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="fee">Fee Amount (optional)</Label>
+              <Input
+                id="fee"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={fee}
+                onChange={(e) => setFee(e.target.value)}
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Fee will be deducted from the top-up amount
+              </p>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmApproval} className="flex-1 bg-success hover:bg-success/80">
+                Approve with Fee
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
