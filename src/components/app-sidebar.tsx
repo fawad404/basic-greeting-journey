@@ -13,6 +13,8 @@ import {
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { useBalance } from "@/contexts/BalanceContext"
+import { useProfit } from "@/hooks/useProfit"
+import { useUserProfile } from "@/hooks/useUserProfile"
 
 import {
   Sidebar,
@@ -56,6 +58,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed"
   const { user, isAdmin, logout } = useAuth()
   const { balance, isLoading: isLoadingBalance } = useBalance()
+  const { profit, isLoading: isLoadingProfit } = useProfit()
+  const { profile, isLoading: isLoadingProfile } = useUserProfile(user?.id)
   
   const navigationItems = isAdmin
     ? [...baseNavigationItems, ...adminNavigationItems]
@@ -83,7 +87,12 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-sidebar-foreground">Ads Gorilla</span>
-              <span className="text-xs text-sidebar-foreground/60">Customer Panel</span>
+              <span className="text-xs text-sidebar-foreground/60">
+                {isAdmin 
+                  ? `Welcome ${profile?.username || 'Admin'}`
+                  : `Welcome ${profile?.username || profile?.telegram_username || 'Customer'}`
+                }
+              </span>
             </div>
           )}
         </div>
@@ -121,11 +130,15 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.email || 'User'}</p>
-              <p className="text-xs text-sidebar-foreground/60 mt-1">Available Balance</p>
-              {isLoadingBalance ? (
+              <p className="text-xs text-sidebar-foreground/60 mt-1">
+                {isAdmin ? 'Profit' : 'Available Balance'}
+              </p>
+              {(isAdmin ? isLoadingProfit : isLoadingBalance) ? (
                 <div className="h-5 w-20 bg-muted animate-pulse rounded"></div>
               ) : (
-                <p className="text-sm font-semibold text-success">${balance?.toFixed(2) || '0.00'}</p>
+                <p className="text-sm font-semibold text-success">
+                  ${isAdmin ? profit?.toFixed(2) || '0.00' : balance?.toFixed(2) || '0.00'}
+                </p>
               )}
             </div>
           )}
