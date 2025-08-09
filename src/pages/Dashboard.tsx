@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2, Calendar } from "lucide-react"
+import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -39,7 +39,7 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState({
     totalTransferAmount: 0,
     totalTopupAmount: 0,
-    accountCreatedDate: '',
+    accountCount: 0,
     totalSpending: 0
   })
 
@@ -64,6 +64,12 @@ export default function Dashboard() {
             .eq('user_id', userData.id)
             .eq('status', 'approved')
 
+          // Get account count for this user
+          const { data: adAccounts } = await supabase
+            .from('ad_accounts')
+            .select('id')
+            .eq('user_id', userData.id)
+
           let totalTransferAmount = 0
           let totalTopupAmount = 0
 
@@ -82,7 +88,7 @@ export default function Dashboard() {
           setMetrics({
             totalTransferAmount,
             totalTopupAmount,
-            accountCreatedDate: new Date(userData.created_at).toLocaleDateString(),
+            accountCount: adAccounts ? adAccounts.length : 0,
             totalSpending: totalTopupAmount // Total spending equals total top-ups
           })
         }
@@ -127,9 +133,9 @@ export default function Dashboard() {
               className="border-l-4 border-l-primary"
             />
             <MetricCard
-              title="Account Created"
-              value={metrics.accountCreatedDate}
-              icon={<Calendar className="h-4 w-4 text-warning" />}
+              title="Ad Accounts"
+              value={metrics.accountCount.toString()}
+              icon={<Building2 className="h-4 w-4 text-warning" />}
               className="border-l-4 border-l-warning"
             />
             <MetricCard

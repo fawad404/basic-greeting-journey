@@ -471,17 +471,6 @@ export default function UsersManagement() {
                             >
                               Edit
                             </Button>
-                            {user.role === 'customer' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(`/user-dashboard/${user.id}`, '_blank')}
-                                className="flex items-center gap-1"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                View Dashboard
-                              </Button>
-                            )}
                           </>
                         )}
                       </div>
