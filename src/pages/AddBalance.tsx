@@ -171,7 +171,9 @@ export default function AddBalance() {
               amount: parseFloat(amount),
               transactionId: txHash,
               requestType: 'payment',
-              note: notes || undefined
+              note: notes || undefined,
+              userBalance: currentBalance,
+              totalTopUpAmount: totalTransferAmount
             }
           })
         } catch (notificationError) {

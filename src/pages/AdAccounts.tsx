@@ -197,7 +197,8 @@ export default function AdAccounts() {
               transactionId: `REP-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
               requestType: 'replacement',
               accountName: selectedAccount.account_name,
-              reason: replaceReason
+              reason: replaceReason,
+              screenshotUrl: screenshotUrl
             }
           })
         } catch (notificationError) {
