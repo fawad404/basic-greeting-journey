@@ -381,21 +381,50 @@ export default function ReplacementRequests() {
               {selectedRequest.screenshot_url && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Screenshot</p>
-                  <div className="border rounded-lg p-4">
-                    <img 
-                      src={selectedRequest.screenshot_url} 
-                      alt="Request screenshot"
-                      className="max-w-full h-auto rounded"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => window.open(selectedRequest.screenshot_url!, '_blank')}
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      Download
-                    </Button>
+                  <div className="border rounded-lg p-4 bg-muted/20">
+                    <div className="relative group">
+                      <img 
+                        src={selectedRequest.screenshot_url} 
+                        alt="Request screenshot"
+                        className="max-w-full h-auto rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                        style={{ maxHeight: '400px' }}
+                        onClick={() => window.open(selectedRequest.screenshot_url!, '_blank')}
+                        onError={(e) => {
+                          console.error('Image failed to load:', selectedRequest.screenshot_url);
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<p class="text-destructive text-sm">Failed to load image</p>';
+                        }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded">
+                        <Eye className="h-8 w-8 text-white drop-shadow-lg" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(selectedRequest.screenshot_url!, '_blank')}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Full Size
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = selectedRequest.screenshot_url!;
+                          link.download = `replacement-request-${selectedRequest.id}-screenshot.png`;
+                          link.target = '_blank';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
