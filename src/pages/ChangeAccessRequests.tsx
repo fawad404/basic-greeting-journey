@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { 
   Table, 
   TableBody, 
@@ -16,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
-import { Loader2, Eye, Check, X } from "lucide-react"
+import { Loader2, Eye, Check, X, Filter, Search, Calendar } from "lucide-react"
 
 interface ChangeAccessRequest {
   id: string
@@ -38,6 +40,15 @@ export default function ChangeAccessRequests() {
   const [selectedRequest, setSelectedRequest] = useState<ChangeAccessRequest | null>(null)
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [dateFilter, setDateFilter] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const fetchRequests = async () => {
     if (!isAdmin) return
@@ -97,6 +108,28 @@ export default function ChangeAccessRequests() {
       setLoading(false)
     }
   }
+
+  // Filtered and paginated requests
+  const filteredRequests = useMemo(() => {
+    return requests.filter(request => {
+      const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      const matchesDate = !dateFilter || new Date(request.created_at).toISOString().split('T')[0] === dateFilter;
+      const matchesSearch = !searchTerm || 
+        request.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.account_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (request.description && request.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      return matchesStatus && matchesDate && matchesSearch;
+    });
+  }, [requests, statusFilter, dateFilter, searchTerm]);
+
+  const paginatedRequests = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredRequests.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredRequests, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
   useEffect(() => {
     fetchRequests()
@@ -167,30 +200,89 @@ export default function ChangeAccessRequests() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search requests..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'pending' | 'approved' | 'rejected') => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setStatusFilter('all');
+                setDateFilter('');
+                setSearchTerm('');
+                setCurrentPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Change Access Requests</CardTitle>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            Change Access Requests
+            <Badge className="ml-2 bg-primary text-primary-foreground">
+              {filteredRequests.length}
+            </Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {requests.length === 0 ? (
+          {filteredRequests.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No change access requests found.</p>
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== 'all' || dateFilter ? 'No requests match your filters' : 'No change access requests found.'}
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>New Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((request) => (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>New Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.user_email}</TableCell>
                     <TableCell>{request.account_name || 'N/A'}</TableCell>
@@ -210,9 +302,43 @@ export default function ChangeAccessRequests() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

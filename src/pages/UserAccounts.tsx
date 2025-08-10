@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { Pencil, Plus, Search, Filter } from "lucide-react"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 
 interface User {
   id: string;
@@ -60,6 +61,10 @@ export default function UserAccounts() {
     timezone: 'UTC'
   })
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
   // Filtered accounts based on search and status filter
   const filteredAccounts = useMemo(() => {
     return accounts.filter(account => {
@@ -73,7 +78,15 @@ export default function UserAccounts() {
       
       return matchesSearch && matchesStatus;
     });
-  }, [accounts, searchTerm, statusFilter])
+  }, [accounts, searchTerm, statusFilter]);
+
+  // Paginated accounts
+  const paginatedAccounts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAccounts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAccounts, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage);
 
   useEffect(() => {
     if (!authLoading && isAdmin) {
@@ -598,7 +611,7 @@ export default function UserAccounts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAccounts.map((account) => (
+              {paginatedAccounts.map((account) => (
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">{account.account_name}</TableCell>
                   <TableCell>{account.account_id}</TableCell>
@@ -622,7 +635,7 @@ export default function UserAccounts() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredAccounts.length === 0 && (
+              {paginatedAccounts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground">
                     {searchTerm || statusFilter !== 'all' ? 'No accounts match your search criteria' : 'No ad accounts found'}
@@ -631,6 +644,39 @@ export default function UserAccounts() {
               )}
             </TableBody>
           </Table>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
