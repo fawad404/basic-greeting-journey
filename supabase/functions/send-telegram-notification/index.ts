@@ -14,9 +14,12 @@ interface NotificationRequest {
   description?: string
   accountName?: string
   reason?: string
+  screenshotUrl?: string
+  userBalance?: number
+  totalTopUpAmount?: number
 }
 
-async function sendTelegramMessage(message: string, transactionId: string, requestType: string): Promise<boolean> {
+async function sendTelegramMessage(message: string, transactionId: string, requestType: string, screenshotUrl?: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
   const ADMIN_CHAT_ID = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID')
   
@@ -25,26 +28,52 @@ async function sendTelegramMessage(message: string, transactionId: string, reque
     return false
   }
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
-  
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: ADMIN_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML',
-        reply_markup: createInlineKeyboard(transactionId, requestType)
-      }),
-    })
+    // If there's a screenshot for replacement requests, send photo with caption
+    if (screenshotUrl && requestType === 'replacement') {
+      const photoUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`
+      
+      const response = await fetch(photoUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: ADMIN_CHAT_ID,
+          photo: screenshotUrl,
+          caption: message,
+          parse_mode: 'HTML',
+          reply_markup: createInlineKeyboard(transactionId, requestType)
+        }),
+      })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Telegram API error:', response.status, errorText)
-      return false
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Telegram Photo API error:', response.status, errorText)
+        return false
+      }
+    } else {
+      // Send regular text message
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: ADMIN_CHAT_ID,
+          text: message,
+          parse_mode: 'HTML',
+          reply_markup: createInlineKeyboard(transactionId, requestType)
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Telegram API error:', response.status, errorText)
+        return false
+      }
     }
 
     console.log('Telegram notification sent successfully')
@@ -113,6 +142,22 @@ function formatNotification(data: NotificationRequest): string {
     message += `\n💰 <b>Amount:</b> $${data.amount}`
   }
   
+  // Add TXID for payment requests
+  if (data.requestType === 'payment' && data.transactionId) {
+    message += `\n🔗 <b>TXID:</b> <code>${data.transactionId}</code>`
+  }
+  
+  // Add user balance for payment requests
+  if (data.requestType === 'payment' && data.userBalance !== undefined) {
+    message += `\n💳 <b>Available Balance:</b> $${data.userBalance.toFixed(2)}`
+  }
+  
+  // Add total top-up amount for payment requests
+  if (data.requestType === 'payment' && data.totalTopUpAmount !== undefined) {
+    const totalText = data.totalTopUpAmount === 0 ? 'New User - First Payment' : `$${data.totalTopUpAmount.toFixed(2)}`
+    message += `\n📊 <b>Total Top-Up Amount:</b> ${totalText}`
+  }
+  
   if (data.accountName) {
     message += `\n🏷️ <b>Account:</b> ${data.accountName}`
   }
@@ -170,7 +215,7 @@ Deno.serve(async (req) => {
     console.log('Formatted message:', message)
     
     console.log('Sending Telegram message...')
-    const success = await sendTelegramMessage(message, data.transactionId, data.requestType)
+    const success = await sendTelegramMessage(message, data.transactionId, data.requestType, data.screenshotUrl)
     console.log('Telegram send result:', success)
 
     if (success) {
