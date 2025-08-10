@@ -65,6 +65,7 @@ async function sendTelegramMessage(message: string, transactionId: string, reque
           chat_id: ADMIN_CHAT_ID,
           text: message,
           parse_mode: 'HTML',
+          disable_web_page_preview: true,
           reply_markup: createInlineKeyboard(transactionId, requestType)
         }),
       })
