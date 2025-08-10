@@ -142,11 +142,9 @@ function formatNotification(data: NotificationRequest): string {
     message += `\n💰 <b>Amount:</b> $${data.amount}`
   }
   
-  // Add TXID for payment requests with clickable link
+  // Add TXID for payment requests
   if (data.requestType === 'payment' && data.transactionId) {
-    const tronScanUrl = `https://tronscan.org/#/transaction/${data.transactionId}`
-    const shortTxId = `${data.transactionId.substring(0, 8)}...${data.transactionId.substring(data.transactionId.length - 8)}`
-    message += `\n🔗 <b>TXID:</b> <a href="${tronScanUrl}">${shortTxId}</a>`
+    message += `\n🔗 <b>TXID:</b> <code>${data.transactionId}</code>`
   }
   
   // Add user balance for payment requests

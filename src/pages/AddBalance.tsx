@@ -132,7 +132,7 @@ export default function AddBalance() {
         .maybeSingle()
 
       if (userData) {
-        // Get current user balance before adding this deposit
+        // Get current user balance and total top-up amount
         const { data: existingPayments } = await supabase
           .from('payments')
           .select('*')
@@ -140,15 +140,18 @@ export default function AddBalance() {
           .eq('status', 'approved')
 
         let currentBalance = 0
+        let totalTopUpAmount = 0
         if (existingPayments) {
-          currentBalance = existingPayments.reduce((sum, payment) => {
-            const fee = payment.fee || 0
+          existingPayments.forEach(payment => {
             if (payment.transaction_id.startsWith('TOPUP-')) {
-              return sum - payment.amount - fee
+              // Subtract deductions
+              currentBalance -= payment.amount
             } else {
-              return sum + (payment.amount - fee)
+              // Add deposits (amount is the top-up amount after fees)
+              currentBalance += payment.amount
+              totalTopUpAmount += payment.amount
             }
-          }, 0)
+          })
         }
 
         const { error } = await supabase
@@ -173,7 +176,7 @@ export default function AddBalance() {
               requestType: 'payment',
               note: notes || undefined,
               userBalance: currentBalance,
-              totalTopUpAmount: totalTransferAmount
+              totalTopUpAmount: totalTopUpAmount
             }
           })
         } catch (notificationError) {
