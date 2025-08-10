@@ -163,6 +163,21 @@ export default function AddBalance() {
 
         if (error) throw error
 
+        // Send Telegram notification
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              userEmail: user.email,
+              amount: parseFloat(amount),
+              transactionId: txHash,
+              requestType: 'payment',
+              note: notes || undefined
+            }
+          })
+        } catch (notificationError) {
+          console.error('Failed to send Telegram notification:', notificationError)
+        }
+
         toast({
           title: "Success",
           description: "Successfully sent for approval. Status will update after admin review.",

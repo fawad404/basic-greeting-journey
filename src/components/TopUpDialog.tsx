@@ -102,6 +102,8 @@ export function TopUpDialog({ open, onOpenChange, accountId, accountName }: TopU
               userEmail: user.email,
               amount: topUpAmount,
               transactionId: transactionId,
+              requestType: 'top-up',
+              accountName: accountName,
               note: note || `Top-up request for ${accountName || 'account'}${accountId ? ` (ID: ${accountId})` : ''}`
             }
           });

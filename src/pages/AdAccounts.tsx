@@ -189,6 +189,21 @@ export default function AdAccounts() {
 
         if (error) throw error
 
+        // Send Telegram notification
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              userEmail: user.email,
+              transactionId: `REP-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+              requestType: 'replacement',
+              accountName: selectedAccount.account_name,
+              reason: replaceReason
+            }
+          })
+        } catch (notificationError) {
+          console.error('Failed to send Telegram notification:', notificationError)
+        }
+
         toast({
           title: "Replacement Request Submitted",
           description: "Your account replacement request has been submitted for review.",
@@ -253,6 +268,22 @@ export default function AdAccounts() {
           }])
 
         if (error) throw error
+
+        // Send Telegram notification
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              userEmail: user.email,
+              transactionId: `ACC-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+              requestType: 'change-access',
+              accountName: selectedAccount.account_name,
+              description: changeAccessReason,
+              note: `New email: ${changeAccessEmail}`
+            }
+          })
+        } catch (notificationError) {
+          console.error('Failed to send Telegram notification:', notificationError)
+        }
 
         toast({
           title: "Change Access Request Submitted",

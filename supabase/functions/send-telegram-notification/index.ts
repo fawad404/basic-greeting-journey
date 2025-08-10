@@ -7,17 +7,21 @@ const corsHeaders = {
 
 interface NotificationRequest {
   userEmail: string
-  amount: number
+  amount?: number
   transactionId: string
   note?: string
+  requestType: 'top-up' | 'replacement' | 'change-access' | 'payment'
+  description?: string
+  accountName?: string
+  reason?: string
 }
 
-async function sendTelegramMessage(message: string, transactionId: string): Promise<boolean> {
+async function sendTelegramMessage(message: string, transactionId: string, requestType: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
-  const ADMIN_CHAT_ID = '7610098144'
+  const ADMIN_CHAT_ID = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID')
   
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.error('TELEGRAM_BOT_TOKEN not found in environment variables')
+  if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) {
+    console.error('TELEGRAM_BOT_TOKEN or TELEGRAM_ADMIN_CHAT_ID not found in environment variables')
     return false
   }
 
@@ -33,7 +37,7 @@ async function sendTelegramMessage(message: string, transactionId: string): Prom
         chat_id: ADMIN_CHAT_ID,
         text: message,
         parse_mode: 'HTML',
-        reply_markup: createInlineKeyboard(transactionId)
+        reply_markup: createInlineKeyboard(transactionId, requestType)
       }),
     })
 
@@ -51,29 +55,83 @@ async function sendTelegramMessage(message: string, transactionId: string): Prom
   }
 }
 
-function createInlineKeyboard(transactionId: string) {
+function createInlineKeyboard(transactionId: string, requestType: string) {
   const APP_DOMAIN = Deno.env.get('APP_DOMAIN') || 'https://goads-dashboard.vercel.app'
+  
+  let viewUrl = ''
+  
+  switch (requestType) {
+    case 'top-up':
+    case 'payment':
+      viewUrl = `${APP_DOMAIN}/top-up-requests?transaction=${transactionId}`
+      break
+    case 'replacement':
+      viewUrl = `${APP_DOMAIN}/replacement-requests`
+      break
+    case 'change-access':
+      viewUrl = `${APP_DOMAIN}/change-access-requests`
+      break
+    default:
+      viewUrl = `${APP_DOMAIN}/requests`
+  }
   
   return {
     inline_keyboard: [
       [
         {
           text: "👁️ View Request",
-          url: `${APP_DOMAIN}/top-up-requests?transaction=${transactionId}`
+          url: viewUrl
         }
       ]
     ]
   }
 }
 
-function formatTopUpNotification(data: NotificationRequest): string {
-  return `🔔 <b>New Top-Up Request</b>
+function formatNotification(data: NotificationRequest): string {
+  const icons = {
+    'top-up': '💰',
+    'payment': '💳',
+    'replacement': '🔄',
+    'change-access': '🔑'
+  }
+  
+  const titles = {
+    'top-up': 'New Top-Up Request',
+    'payment': 'New Payment Request',
+    'replacement': 'New Account Replacement Request',
+    'change-access': 'New Change Access Request'
+  }
+  
+  const icon = icons[data.requestType] || '📋'
+  const title = titles[data.requestType] || 'New Request'
+  
+  let message = `${icon} <b>${title}</b>
 
-👤 <b>User:</b> ${data.userEmail}
-💰 <b>Amount:</b> $${data.amount}
-${data.note ? `📝 <b>Note:</b> ${data.note}` : ''}
+👤 <b>User:</b> ${data.userEmail}`
 
-⏰ <b>Time:</b> ${new Date().toLocaleString()}`
+  if (data.amount && (data.requestType === 'top-up' || data.requestType === 'payment')) {
+    message += `\n💰 <b>Amount:</b> $${data.amount}`
+  }
+  
+  if (data.accountName) {
+    message += `\n🏷️ <b>Account:</b> ${data.accountName}`
+  }
+  
+  if (data.reason) {
+    message += `\n❗ <b>Reason:</b> ${data.reason}`
+  }
+  
+  if (data.description) {
+    message += `\n📝 <b>Description:</b> ${data.description}`
+  }
+  
+  if (data.note) {
+    message += `\n📝 <b>Note:</b> ${data.note}`
+  }
+  
+  message += `\n\n⏰ <b>Time:</b> ${new Date().toLocaleString()}`
+  
+  return message
 }
 
 Deno.serve(async (req) => {
@@ -92,14 +150,14 @@ Deno.serve(async (req) => {
     const body = await req.json()
     console.log('Parsed body:', body)
     
-    const { userEmail, amount, transactionId, note }: NotificationRequest = body
+    const data: NotificationRequest = body
     
-    console.log('Received notification request:', { userEmail, amount, transactionId, note })
+    console.log('Received notification request:', data)
 
-    if (!userEmail || !amount || !transactionId) {
-      console.error('Missing required fields:', { userEmail, amount, transactionId })
+    if (!data.userEmail || !data.transactionId || !data.requestType) {
+      console.error('Missing required fields:', data)
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields: userEmail, transactionId, and requestType are required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -108,11 +166,11 @@ Deno.serve(async (req) => {
     }
 
     console.log('Formatting message...')
-    const message = formatTopUpNotification({ userEmail, amount, transactionId, note })
+    const message = formatNotification(data)
     console.log('Formatted message:', message)
     
     console.log('Sending Telegram message...')
-    const success = await sendTelegramMessage(message, transactionId)
+    const success = await sendTelegramMessage(message, data.transactionId, data.requestType)
     console.log('Telegram send result:', success)
 
     if (success) {
