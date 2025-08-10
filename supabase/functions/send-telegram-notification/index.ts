@@ -142,20 +142,10 @@ function formatNotification(data: NotificationRequest): string {
     message += `\n💰 <b>Amount:</b> $${data.amount}`
   }
   
-  // Add TXID for payment requests
+  // Add TXID for payment requests with clickable link
   if (data.requestType === 'payment' && data.transactionId) {
-    message += `\n🔗 <b>TXID:</b> <code>${data.transactionId}</code>`
-  }
-  
-  // Add user balance for payment requests
-  if (data.requestType === 'payment' && data.userBalance !== undefined) {
-    message += `\n💳 <b>Available Balance:</b> $${data.userBalance.toFixed(2)}`
-  }
-  
-  // Add total top-up amount for payment requests
-  if (data.requestType === 'payment' && data.totalTopUpAmount !== undefined) {
-    const totalText = data.totalTopUpAmount === 0 ? 'New User - First Payment' : `$${data.totalTopUpAmount.toFixed(2)}`
-    message += `\n📊 <b>Total Top-Up Amount:</b> ${totalText}`
+    const tronScanUrl = `https://tronscan.org/#/transaction/${data.transactionId}`
+    message += `\n🔗 <b>TXID:</b> <a href="${tronScanUrl}">${data.transactionId}</a>`
   }
   
   if (data.accountName) {
