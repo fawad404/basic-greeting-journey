@@ -51,6 +51,9 @@ export default function AdAccounts() {
   const [isSubmittingReplace, setIsSubmittingReplace] = useState(false)
   const [isSubmittingChangeAccess, setIsSubmittingChangeAccess] = useState(false)
 
+  // State for tracking replaced accounts
+  const [replacedAccountIds, setReplacedAccountIds] = useState<Set<string>>(new Set())
+
   // Define fetchAccounts function with useCallback to prevent recreation on every render
   const fetchAccounts = useCallback(async () => {
     if (!user?.email) {
@@ -68,11 +71,26 @@ export default function AdAccounts() {
         .single()
 
       if (userData) {
+        // Fetch accounts
         const { data: accountsData } = await supabase
           .from('ad_accounts')
           .select('*')
           .eq('user_id', userData.id)
           .order('created_at', { ascending: false })
+
+        // Fetch approved replacement requests to identify replaced accounts
+        const { data: approvedReplacements } = await supabase
+          .from('requests')
+          .select('ad_account_id')
+          .eq('user_id', userData.id)
+          .eq('request_type', 'replacement')
+          .eq('status', 'approved')
+
+        // Create set of replaced account IDs
+        const replacedIds = new Set(
+          approvedReplacements?.map(req => req.ad_account_id).filter(Boolean) || []
+        )
+        setReplacedAccountIds(replacedIds)
 
         setAccounts((accountsData as AdAccount[]) || [])
         if (accountsData && accountsData.length > 0) {
@@ -326,40 +344,57 @@ export default function AdAccounts() {
 
             <ScrollArea className="h-[calc(100vh-200px)]">
               <div className="space-y-3">
-                {filteredAccounts.map((account) => (
-                  <div
-                    key={account.id}
-                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 border ${
-                      selectedAccount?.id === account.id 
-                        ? 'border-primary bg-primary/10 shadow-md' 
-                        : 'border-border bg-card hover:bg-accent/50'
-                    }`}
-                    onClick={() => setSelectedAccount(account)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-sm text-foreground leading-tight">
-                        {account.account_name}
-                      </h3>
-                      <Badge 
-                        variant={account.status === "active" ? "default" : "destructive"}
-                        className="text-xs ml-2"
-                      >
-                        {account.status}
-                      </Badge>
+                {filteredAccounts.map((account) => {
+                  const isReplaced = replacedAccountIds.has(account.id)
+                  const isSuspended = account.status === 'suspended'
+                  const isBlocked = isSuspended && isReplaced
+                  
+                  return (
+                    <div
+                      key={account.id}
+                      className={`p-4 rounded-lg transition-all duration-200 border ${
+                        selectedAccount?.id === account.id 
+                          ? 'border-primary bg-primary/10 shadow-md' 
+                          : 'border-border bg-card hover:bg-accent/50'
+                      } ${
+                        isBlocked 
+                          ? 'opacity-60 cursor-not-allowed' 
+                          : 'cursor-pointer'
+                      }`}
+                      onClick={() => !isBlocked && setSelectedAccount(account)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className={`font-semibold text-sm leading-tight ${
+                          isBlocked ? 'text-muted-foreground' : 'text-foreground'
+                        }`}>
+                          {account.account_name}
+                          {isReplaced && isSuspended && (
+                            <span className="block text-xs text-muted-foreground mt-1">
+                              (Replaced)
+                            </span>
+                          )}
+                        </h3>
+                        <Badge 
+                          variant={account.status === "active" ? "default" : "destructive"}
+                          className="text-xs ml-2"
+                        >
+                          {account.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{account.account_id}</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-medium text-foreground">${account.budget.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(account.created_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2">{account.account_id}</p>
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs font-medium text-foreground">${account.budget.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(account.created_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
                 {filteredAccounts.length === 0 && (
                   <div className="text-center text-muted-foreground py-12">
                     <p className="text-sm">
@@ -423,19 +458,37 @@ export default function AdAccounts() {
                     
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-4">
-                      <Button 
-                        onClick={() => handleTopUpClick(selectedAccount)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                      >
-                        Top-Up
-                      </Button>
+                      {(() => {
+                        const isSuspended = selectedAccount.status === 'suspended'
+                        const isReplaced = replacedAccountIds.has(selectedAccount.id)
+                        const isBlocked = isSuspended && isReplaced
+                        
+                        return (
+                          <>
+                            <Button 
+                              onClick={() => handleTopUpClick(selectedAccount)}
+                              disabled={isSuspended}
+                              className={`${
+                                isSuspended 
+                                  ? 'cursor-not-allowed opacity-50' 
+                                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                              }`}
+                            >
+                              Top-Up
+                            </Button>
 
-                      <Dialog open={isReplaceOpen} onOpenChange={setIsReplaceOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="border-muted-foreground">
-                            Replace
-                          </Button>
-                        </DialogTrigger>
+                            <Dialog open={isReplaceOpen} onOpenChange={!isBlocked ? setIsReplaceOpen : undefined}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  disabled={isBlocked}
+                                  className={`border-muted-foreground ${
+                                    isBlocked ? 'cursor-not-allowed opacity-50' : ''
+                                  }`}
+                                >
+                                  Replace
+                                </Button>
+                              </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Request Account Replacement</DialogTitle>
@@ -483,12 +536,18 @@ export default function AdAccounts() {
                         </DialogContent>
                       </Dialog>
 
-                      <Dialog open={isChangeAccessOpen} onOpenChange={setIsChangeAccessOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" className="border-muted-foreground">
-                            Change Access
-                          </Button>
-                        </DialogTrigger>
+                            <Dialog open={isChangeAccessOpen} onOpenChange={!isBlocked ? setIsChangeAccessOpen : undefined}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  disabled={isBlocked}
+                                  className={`border-muted-foreground ${
+                                    isBlocked ? 'cursor-not-allowed opacity-50' : ''
+                                  }`}
+                                >
+                                  Change Access
+                                </Button>
+                              </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Request Access Change</DialogTitle>
@@ -531,8 +590,11 @@ export default function AdAccounts() {
                               </Button>
                             </div>
                           </form>
-                        </DialogContent>
-                      </Dialog>
+                              </DialogContent>
+                            </Dialog>
+                          </>
+                        )
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
