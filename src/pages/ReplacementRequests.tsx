@@ -48,7 +48,7 @@ export default function ReplacementRequests() {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 50
 
   const fetchRequests = async () => {
     if (!isAdmin) return

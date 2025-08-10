@@ -63,7 +63,7 @@ export default function UserAccounts() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 50
 
   // Filtered accounts based on search and status filter
   const filteredAccounts = useMemo(() => {

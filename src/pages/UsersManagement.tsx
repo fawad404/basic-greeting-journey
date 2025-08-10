@@ -224,7 +224,7 @@ export default function UsersManagement() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 50
 
   // Filtered users based on search and role filter
   const filteredUsers = useMemo(() => {

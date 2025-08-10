@@ -62,7 +62,7 @@ export default function TopUpRequests() {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 50
 
   const fetchRequests = async () => {
     try {

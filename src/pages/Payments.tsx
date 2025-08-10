@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,9 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
-import { CheckCircle, XCircle, Clock, Receipt, ExternalLink, Edit } from "lucide-react"
+import { CheckCircle, XCircle, Clock, Receipt, ExternalLink, Edit, Filter, Search, Calendar } from "lucide-react"
 
 interface Payment {
   id: string
@@ -36,6 +37,15 @@ export default function Payments() {
   const [editNote, setEditNote] = useState("")
   const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
   const { toast } = useToast()
+
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [dateFilter, setDateFilter] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 50
 
   const fetchPayments = async () => {
     try {
@@ -75,6 +85,27 @@ export default function Payments() {
       setLoading(false)
     }
   }
+
+  // Filtered and paginated payments
+  const filteredPayments = useMemo(() => {
+    return payments.filter(payment => {
+      const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+      const matchesDate = !dateFilter || new Date(payment.created_at).toISOString().split('T')[0] === dateFilter;
+      const matchesSearch = !searchTerm || 
+        payment.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (payment.note && payment.note.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      return matchesStatus && matchesDate && matchesSearch;
+    });
+  }, [payments, statusFilter, dateFilter, searchTerm]);
+
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredPayments.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredPayments, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
 
   useEffect(() => {
     fetchPayments()
@@ -246,11 +277,65 @@ export default function Payments() {
         <p className="text-muted-foreground">Approve or reject user payment requests</p>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search payments..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'pending' | 'approved' | 'rejected') => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setStatusFilter('all');
+                setDateFilter('');
+                setSearchTerm('');
+                setCurrentPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
             Payment Requests
+            <Badge className="ml-2 bg-primary text-primary-foreground">
+              {filteredPayments.length}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -268,7 +353,7 @@ export default function Payments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.map((payment) => (
+              {paginatedPayments.map((payment) => (
                 <TableRow key={payment.id}>
                   <TableCell className="font-medium">{payment.user_email}</TableCell>
                   <TableCell>${payment.amount.toFixed(2)}</TableCell>
@@ -556,9 +641,43 @@ export default function Payments() {
               ))}
             </TableBody>
           </Table>
-          {payments.length === 0 && (
+          
+          {filteredPayments.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No payment requests found
+              {searchTerm || statusFilter !== 'all' || dateFilter ? 'No payments match your filters' : 'No payments found'}
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
