@@ -391,8 +391,12 @@ export default function ReplacementRequests() {
                         onClick={() => window.open(selectedRequest.screenshot_url!, '_blank')}
                         onError={(e) => {
                           console.error('Image failed to load:', selectedRequest.screenshot_url);
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement!.innerHTML = '<p class="text-destructive text-sm">Failed to load image</p>';
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<p class="text-destructive text-sm">Failed to load image. The image may have been deleted or is not accessible.</p>';
+                          }
                         }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded">
@@ -411,14 +415,28 @@ export default function ReplacementRequests() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = selectedRequest.screenshot_url!;
-                          link.download = `replacement-request-${selectedRequest.id}-screenshot.png`;
-                          link.target = '_blank';
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(selectedRequest.screenshot_url!);
+                            if (!response.ok) throw new Error('Failed to fetch image');
+                            
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `replacement-request-${selectedRequest.id}-screenshot.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                          } catch (error) {
+                            console.error('Download failed:', error);
+                            toast({
+                              variant: "destructive",
+                              title: "Download Failed",
+                              description: "Unable to download the image. It may have been deleted or is not accessible.",
+                            });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
