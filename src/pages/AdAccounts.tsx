@@ -48,6 +48,8 @@ export default function AdAccounts() {
   const [changeAccessEmail, setChangeAccessEmail] = useState("")
   const [changeAccessReason, setChangeAccessReason] = useState("")
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
+  const [isSubmittingReplace, setIsSubmittingReplace] = useState(false)
+  const [isSubmittingChangeAccess, setIsSubmittingChangeAccess] = useState(false)
 
   // Define fetchAccounts function with useCallback to prevent recreation on every render
   const fetchAccounts = useCallback(async () => {
@@ -106,9 +108,11 @@ export default function AdAccounts() {
   const handleReplaceSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedAccount || !user) return
+    if (!selectedAccount || !user || isSubmittingReplace) return
 
     try {
+      setIsSubmittingReplace(true)
+      
       const { data: userData } = await supabase
         .from('users')
         .select('id')
@@ -116,6 +120,25 @@ export default function AdAccounts() {
         .single()
 
       if (userData) {
+        // Check for existing pending requests
+        const { data: existingRequest } = await supabase
+          .from('requests')
+          .select('id, status')
+          .eq('user_id', userData.id)
+          .eq('ad_account_id', selectedAccount.id)
+          .eq('request_type', 'replacement')
+          .eq('status', 'pending')
+          .single()
+
+        if (existingRequest) {
+          toast({
+            variant: "destructive",
+            title: "Request Already Exists",
+            description: "You already have a pending replacement request for this account. Please wait for approval.",
+          })
+          return
+        }
+
         let screenshotUrl = null
 
         // Upload screenshot if provided
@@ -162,15 +185,19 @@ export default function AdAccounts() {
         title: "Error",
         description: error.message || "Failed to submit replacement request"
       })
+    } finally {
+      setIsSubmittingReplace(false)
     }
   }
 
   const handleChangeAccessSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedAccount || !user) return
+    if (!selectedAccount || !user || isSubmittingChangeAccess) return
 
     try {
+      setIsSubmittingChangeAccess(true)
+      
       const { data: userData } = await supabase
         .from('users')
         .select('id')
@@ -178,6 +205,25 @@ export default function AdAccounts() {
         .single()
 
       if (userData) {
+        // Check for existing pending requests
+        const { data: existingRequest } = await supabase
+          .from('requests')
+          .select('id, status')
+          .eq('user_id', userData.id)
+          .eq('ad_account_id', selectedAccount.id)
+          .eq('request_type', 'change_access')
+          .eq('status', 'pending')
+          .single()
+
+        if (existingRequest) {
+          toast({
+            variant: "destructive",
+            title: "Request Already Exists",
+            description: "You already have a pending change access request for this account. Please wait for approval.",
+          })
+          return
+        }
+
         const { error } = await supabase
           .from('requests')
           .insert([{
@@ -204,6 +250,8 @@ export default function AdAccounts() {
         title: "Error",
         description: error.message || "Failed to submit change access request"
       })
+    } finally {
+      setIsSubmittingChangeAccess(false)
     }
   }
 
@@ -420,7 +468,16 @@ export default function AdAccounts() {
                               <Button type="button" variant="outline" onClick={() => setIsReplaceOpen(false)}>
                                 Cancel
                               </Button>
-                              <Button type="submit">Submit Request</Button>
+                              <Button type="submit" disabled={isSubmittingReplace}>
+                                {isSubmittingReplace ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  'Submit Request'
+                                )}
+                              </Button>
                             </div>
                           </form>
                         </DialogContent>
@@ -462,7 +519,16 @@ export default function AdAccounts() {
                               <Button type="button" variant="outline" onClick={() => setIsChangeAccessOpen(false)}>
                                 Cancel
                               </Button>
-                              <Button type="submit">Submit Request</Button>
+                              <Button type="submit" disabled={isSubmittingChangeAccess}>
+                                {isSubmittingChangeAccess ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  'Submit Request'
+                                )}
+                              </Button>
                             </div>
                           </form>
                         </DialogContent>
