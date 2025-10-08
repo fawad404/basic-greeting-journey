@@ -123,145 +123,43 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      if (!user) return
+    // Use dummy data instead of database queries
+    setIsLoadingMetrics(true)
 
-      setIsLoadingMetrics(true)
+    // Generate dummy chart data
+    const { startDate, endDate } = getDateRange()
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate })
+    const dummyChartData = allDays.map(date => ({
+      name: format(date, 'dd'),
+      value: Math.floor(Math.random() * 5000) + 1000,
+      date: format(date, 'yyyy-MM-dd')
+    }))
+    setSpendChartData(dummyChartData)
 
-      try {
-        const { startDate, endDate } = getDateRange()
-        
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, created_at')
-          .eq('email', user.email)
-          .single()
-
-        if (userData) {
-          // Get ALL payments for this user (no date filter here)
-          const { data: allPayments } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('user_id', userData.id)
-            .eq('status', 'approved')
-
-          // Get account count for this user
-          const { data: adAccounts } = await supabase
-            .from('ad_accounts')
-            .select('id')
-            .eq('user_id', userData.id)
-
-          let totalTransferAmount = 0
-          let totalTopupAmount = 0
-
-          if (allPayments) {
-            // Filter payments by date range for metrics
-            const filteredPayments = allPayments.filter(payment => {
-              const paymentDate = new Date(payment.created_at)
-              return paymentDate >= startDate && paymentDate <= endDate
-            })
-
-            filteredPayments.forEach(payment => {
-              if (payment.transaction_id.startsWith('TOPUP-')) {
-                totalTopupAmount += payment.amount
-              } else {
-                totalTransferAmount += payment.amount
-              }
-            })
-
-            // Generate chart data using all payments
-            const chartData = generateChartData(allPayments)
-            setSpendChartData(chartData)
-          }
-
-          setMetrics({
-            totalTransferAmount,
-            totalTopupAmount,
-            accountCount: adAccounts ? adAccounts.length : 0,
-            totalSpending: totalTopupAmount
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching metrics:', error)
-      } finally {
-        setIsLoadingMetrics(false)
-      }
+    if (isAdmin) {
+      // Dummy admin metrics
+      setAdminMetrics({
+        totalAccounts: 1250,
+        totalTopupAmount: 485230.50,
+        suspendedAccounts: 23,
+        totalSpending: 342150.75,
+        totalServiceFees: 28456.90
+      })
+    } else {
+      // Dummy user metrics
+      setMetrics({
+        totalTransferAmount: 15420.50,
+        totalTopupAmount: 8750.25,
+        accountCount: 5,
+        totalSpending: 8750.25
+      })
     }
 
-    const fetchAdminMetrics = async () => {
-      if (!user || !isAdmin) return
-
-      setIsLoadingMetrics(true)
-
-      try {
-        const { startDate, endDate } = getDateRange()
-
-        // Get total number of user accounts within date range
-        const { data: totalUsers } = await supabase
-          .from('users')
-          .select('id')
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
-
-        // Get ALL approved payments (no date filter here)
-        const { data: allPayments } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('status', 'approved')
-
-        // Get suspended ad accounts
-        const { data: suspendedAccounts } = await supabase
-          .from('ad_accounts')
-          .select('id')
-          .eq('status', 'suspended')
-
-        let totalTopupAmount = 0
-        let totalSpending = 0
-        let totalServiceFees = 0
-
-        if (allPayments) {
-          // Filter payments by date range for metrics
-          const filteredPayments = allPayments.filter(payment => {
-            const paymentDate = new Date(payment.created_at)
-            return paymentDate >= startDate && paymentDate <= endDate
-          })
-
-          filteredPayments.forEach(payment => {
-            if (payment.transaction_id.startsWith('TOPUP-')) {
-              totalSpending += payment.amount
-            } else {
-              totalTopupAmount += payment.amount
-            }
-            if (payment.fee) {
-              totalServiceFees += payment.fee
-            }
-          })
-
-          // Generate chart data using all payments
-          const chartData = generateChartData(allPayments)
-          setSpendChartData(chartData)
-        }
-
-        setAdminMetrics({
-          totalAccounts: totalUsers ? totalUsers.length : 0,
-          totalTopupAmount,
-          suspendedAccounts: suspendedAccounts ? suspendedAccounts.length : 0,
-          totalSpending,
-          totalServiceFees
-        })
-      } catch (error) {
-        console.error('Error fetching admin metrics:', error)
-      } finally {
-        setIsLoadingMetrics(false)
-      }
-    }
-
-    if (user && !isAdmin) {
-      fetchMetrics()
-    } else if (user && isAdmin) {
-      fetchAdminMetrics()
-    }
-  }, [user, isAdmin, dateFilter, customStartDate, customEndDate])
+    // Simulate loading delay
+    setTimeout(() => {
+      setIsLoadingMetrics(false)
+    }, 500)
+  }, [isAdmin, dateFilter, customStartDate, customEndDate])
 
   const currentTotalSpending = isAdmin ? adminMetrics.totalSpending : metrics.totalSpending
 
