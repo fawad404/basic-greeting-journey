@@ -12,10 +12,10 @@ interface AuthState {
 }
 
 export function useAuth() {
-  // TEMPORARY: Mock admin user for development
+  // TEMPORARY: Mock customer user for development
   const mockUser = {
-    id: 'temp-admin-id',
-    email: 'admin@temp.com',
+    id: 'temp-customer-id',
+    email: 'customer@test.com',
     created_at: new Date().toISOString(),
   } as User;
 
@@ -26,10 +26,10 @@ export function useAuth() {
   return {
     user: mockUser,
     session: { user: mockUser } as Session,
-    role: 'admin' as UserRole,
+    role: 'customer' as UserRole,
     loading: false,
     logout,
-    isAdmin: true,
-    isCustomer: false,
+    isAdmin: false,
+    isCustomer: true,
   };
 }

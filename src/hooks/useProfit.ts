@@ -6,54 +6,9 @@ export function useProfit() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProfit = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Sum all fees from payments table
-        const { data, error } = await supabase
-          .from('payments')
-          .select('fee')
-          .not('fee', 'is', null);
-
-        if (error) {
-          console.error('Error fetching profit:', error);
-          setProfit(0);
-        } else {
-          const totalProfit = data?.reduce((sum, payment) => {
-            return sum + (payment.fee || 0);
-          }, 0) || 0;
-          setProfit(totalProfit);
-        }
-      } catch (error) {
-        console.error('Error calculating profit:', error);
-        setProfit(0);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfit();
-
-    // Set up real-time subscription for payments updates
-    const channel = supabase
-      .channel('profit-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'payments'
-        },
-        () => {
-          fetchProfit();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // TEMPORARY: Return dummy profit for mock admin
+    setProfit(12456.78)
+    setIsLoading(false)
   }, []);
 
   return { profit, isLoading };

@@ -11,36 +11,12 @@ export function useUserProfile(userId: string | undefined) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        
-        const { data, error } = await supabase
-          .from('users')
-          .select('username, telegram_username')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          setProfile(null);
-        } else {
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-        setProfile(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
+    // TEMPORARY: Return dummy profile for mock user
+    setProfile({
+      username: 'John Doe',
+      telegram_username: '@johndoe'
+    });
+    setIsLoading(false);
   }, [userId]);
 
   return { profile, isLoading };
