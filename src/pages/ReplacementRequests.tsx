@@ -56,69 +56,48 @@ export default function ReplacementRequests() {
     try {
       setLoading(true)
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Create dummy replacement requests
-      const dummyRequests: ReplacementRequest[] = [
-        {
-          id: 'replace-1',
-          user_id: 'user-1',
-          ad_account_id: '3',
-          description: 'Account suspended due to policy violation. Need immediate replacement to continue campaigns.',
-          screenshot_url: 'https://placehold.co/800x600/1a1a1a/ffffff?text=Account+Suspended',
-          status: 'pending',
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          user_email: 'john.doe@example.com',
-          account_name: 'Digital Media - 003 - 2245 - L003'
-        },
-        {
-          id: 'replace-2',
-          user_id: 'user-2',
-          ad_account_id: '7',
-          description: 'Previous account reached spending limit. Requesting new account for continued operations.',
-          screenshot_url: null,
-          status: 'approved',
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'jane.smith@example.com',
-          account_name: 'Premium Ads - 007 - 3201 - L007'
-        },
-        {
-          id: 'replace-3',
-          user_id: 'user-3',
-          ad_account_id: '12',
-          description: 'Account disabled without reason. Customer support not responsive.',
-          screenshot_url: 'https://placehold.co/800x600/1a1a1a/ffffff?text=Account+Disabled',
-          status: 'pending',
-          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'mike.johnson@example.com',
-          account_name: 'Fast Track - 012 - 4156 - L012'
-        },
-        {
-          id: 'replace-4',
-          user_id: 'user-4',
-          ad_account_id: null,
-          description: 'Technical issues preventing ad delivery. Need fresh account.',
-          screenshot_url: null,
-          status: 'rejected',
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'sarah.wilson@example.com',
-          account_name: undefined
-        },
-        {
-          id: 'replace-5',
-          user_id: 'user-5',
-          ad_account_id: '15',
-          description: 'Account under review for over 2 weeks. Cannot wait any longer.',
-          screenshot_url: 'https://placehold.co/800x600/1a1a1a/ffffff?text=Under+Review',
-          status: 'approved',
-          created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'david.brown@example.com',
-          account_name: 'Growth Pro - 015 - 5289 - L015'
+      const { data: requestsData, error } = await supabase
+        .from('requests')
+        .select(`
+          id,
+          user_id,
+          ad_account_id,
+          description,
+          screenshot_url,
+          status,
+          created_at
+        `)
+        .eq('request_type', 'replacement')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Fetch user emails separately
+      const userIds = [...new Set(requestsData?.map(r => r.user_id) || [])]
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds)
+
+      // Fetch account names separately
+      const accountIds = [...new Set(requestsData?.filter(r => r.ad_account_id).map(r => r.ad_account_id) || [])]
+      const { data: accountsData } = await supabase
+        .from('ad_accounts')
+        .select('id, account_name')
+        .in('id', accountIds)
+
+      const formattedRequests = requestsData?.map((request: any) => {
+        const user = usersData?.find(u => u.id === request.user_id)
+        const account = accountsData?.find(a => a.id === request.ad_account_id)
+        
+        return {
+          ...request,
+          user_email: user?.email,
+          account_name: account?.account_name
         }
-      ]
-      
-      setRequests(dummyRequests)
+      }) || []
+
+      setRequests(formattedRequests)
     } catch (error: any) {
       toast({
         variant: "destructive",

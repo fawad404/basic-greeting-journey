@@ -56,69 +56,48 @@ export default function ChangeAccessRequests() {
     try {
       setLoading(true)
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Create dummy change access requests
-      const dummyRequests: ChangeAccessRequest[] = [
-        {
-          id: 'access-1',
-          user_id: 'user-1',
-          ad_account_id: '1',
-          description: 'Team member left company. Need to update access to new manager email.',
-          email: 'newmanager@company.com',
-          status: 'pending',
-          created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          user_email: 'john.doe@example.com',
-          account_name: 'Ads Agency - 001 - 1945 - L001'
-        },
-        {
-          id: 'access-2',
-          user_id: 'user-2',
-          ad_account_id: '2',
-          description: 'Security audit requires email change for all accounts.',
-          email: 'security@company.com',
-          status: 'approved',
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'jane.smith@example.com',
-          account_name: 'Marketing Pro - 002 - 2103 - L002'
-        },
-        {
-          id: 'access-3',
-          user_id: 'user-3',
-          ad_account_id: '4',
-          description: 'Company rebranding - updating all contact emails.',
-          email: 'ads@newbrand.com',
-          status: 'pending',
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'mike.johnson@example.com',
-          account_name: 'Social Boost - 004 - 2387 - L004'
-        },
-        {
-          id: 'access-4',
-          user_id: 'user-4',
-          ad_account_id: '5',
-          description: 'Department restructure. Transferring to new team lead.',
-          email: 'teamlead@company.com',
-          status: 'rejected',
-          created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'sarah.wilson@example.com',
-          account_name: 'Growth Hub - 005 - 2529 - L005'
-        },
-        {
-          id: 'access-5',
-          user_id: 'user-5',
-          ad_account_id: null,
-          description: 'Previous email compromised. Urgent access email change needed.',
-          email: 'secure@company.com',
-          status: 'approved',
-          created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'david.brown@example.com',
-          account_name: undefined
+      const { data: requestsData, error } = await supabase
+        .from('requests')
+        .select(`
+          id,
+          user_id,
+          ad_account_id,
+          description,
+          email,
+          status,
+          created_at
+        `)
+        .eq('request_type', 'change_access')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Fetch user emails separately
+      const userIds = [...new Set(requestsData?.map(r => r.user_id) || [])]
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds)
+
+      // Fetch account names separately
+      const accountIds = [...new Set(requestsData?.filter(r => r.ad_account_id).map(r => r.ad_account_id) || [])]
+      const { data: accountsData } = await supabase
+        .from('ad_accounts')
+        .select('id, account_name')
+        .in('id', accountIds)
+
+      const formattedRequests = requestsData?.map((request: any) => {
+        const user = usersData?.find(u => u.id === request.user_id)
+        const account = accountsData?.find(a => a.id === request.ad_account_id)
+        
+        return {
+          ...request,
+          user_email: user?.email,
+          account_name: account?.account_name
         }
-      ]
-      
-      setRequests(dummyRequests)
+      }) || []
+
+      setRequests(formattedRequests)
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -54,96 +54,49 @@ export default function AdAccounts() {
   // State for tracking replaced accounts
   const [replacedAccountIds, setReplacedAccountIds] = useState<Set<string>>(new Set())
 
-  // DUMMY DATA - Define fetchAccounts function with useCallback to prevent recreation on every render
+  // Define fetchAccounts function with useCallback to prevent recreation on every render
   const fetchAccounts = useCallback(async () => {
+    if (!user?.email) {
+      setLoading(false)
+      return
+    }
+
     try {
-      setLoading(true)
+      setLoading(true) // Ensure loading is true during fetch
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Create dummy ad accounts
-      const dummyAccounts: AdAccount[] = [
-        {
-          id: '1',
-          user_id: 'user-1',
-          account_name: 'Ads Agency - 001 - 1945 - L001',
-          account_id: '106-201-1997',
-          status: 'active',
-          budget: 5000,
-          total_topup_amount: 12500,
-          access_email: 'admin@adsagency.com',
-          country: 'United States',
-          timezone: 'America/New_York',
-          currency: 'USD',
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          user_id: 'user-1',
-          account_name: 'Marketing Pro - 002 - 2103 - L002',
-          account_id: '107-302-1998',
-          status: 'active',
-          budget: 7500,
-          total_topup_amount: 18000,
-          access_email: 'admin@marketingpro.com',
-          country: 'United Kingdom',
-          timezone: 'Europe/London',
-          currency: 'GBP',
-          created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '3',
-          user_id: 'user-1',
-          account_name: 'Digital Media - 003 - 2245 - L003',
-          account_id: '108-403-1999',
-          status: 'suspended',
-          budget: 3200,
-          total_topup_amount: 8500,
-          access_email: 'admin@digitalmedia.com',
-          country: 'Canada',
-          timezone: 'America/Toronto',
-          currency: 'CAD',
-          created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '4',
-          user_id: 'user-1',
-          account_name: 'Social Boost - 004 - 2387 - L004',
-          account_id: '109-504-2000',
-          status: 'active',
-          budget: 9200,
-          total_topup_amount: 22000,
-          access_email: 'admin@socialboost.com',
-          country: 'Australia',
-          timezone: 'Australia/Sydney',
-          currency: 'AUD',
-          created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '5',
-          user_id: 'user-1',
-          account_name: 'Growth Hub - 005 - 2529 - L005',
-          account_id: '110-605-2001',
-          status: 'active',
-          budget: 6800,
-          total_topup_amount: 15000,
-          access_email: 'admin@growthhub.com',
-          country: 'Germany',
-          timezone: 'Europe/Berlin',
-          currency: 'EUR',
-          created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (userData) {
+        // Fetch accounts
+        const { data: accountsData } = await supabase
+          .from('ad_accounts')
+          .select('*')
+          .eq('user_id', userData.id)
+          .order('created_at', { ascending: false })
+
+        // Fetch approved replacement requests to identify replaced accounts
+        const { data: approvedReplacements } = await supabase
+          .from('requests')
+          .select('ad_account_id')
+          .eq('user_id', userData.id)
+          .eq('request_type', 'replacement')
+          .eq('status', 'approved')
+
+        // Create set of replaced account IDs
+        const replacedIds = new Set(
+          approvedReplacements?.map(req => req.ad_account_id).filter(Boolean) || []
+        )
+        setReplacedAccountIds(replacedIds)
+
+        setAccounts((accountsData as AdAccount[]) || [])
+        if (accountsData && accountsData.length > 0) {
+          setSelectedAccount(accountsData[0] as AdAccount)
         }
-      ]
-      
-      setReplacedAccountIds(new Set(['3'])) // Mark account 3 as replaced
-      setAccounts(dummyAccounts)
-      setSelectedAccount(dummyAccounts[0])
+      }
     } catch (error) {
       console.error('Error fetching accounts:', error)
       toast({
@@ -154,7 +107,7 @@ export default function AdAccounts() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [user?.email, toast])
 
   useEffect(() => {
     fetchAccounts()

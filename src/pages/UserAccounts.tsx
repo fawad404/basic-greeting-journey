@@ -96,105 +96,90 @@ export default function UserAccounts() {
 
   const fetchData = async () => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      console.log('Fetching users and accounts...')
       
-      // Create dummy users
-      const dummyUsers: User[] = [
-        { id: 'user-1', email: 'john.doe@example.com', username: 'john_doe', telegram_username: '@johndoe' },
-        { id: 'user-2', email: 'jane.smith@example.com', username: 'jane_smith', telegram_username: '@janesmith' },
-        { id: 'user-3', email: 'mike.johnson@example.com', username: 'mike_j', telegram_username: '@mikejohnson' },
-        { id: 'user-4', email: 'sarah.wilson@example.com', username: 'sarah_w', telegram_username: '@sarahwilson' },
-        { id: 'user-5', email: 'david.brown@example.com', username: 'david_brown', telegram_username: '@davidb' }
-      ]
+      // First fetch all user roles to get customer user IDs
+      const { data: userRolesData, error: userRolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'customer')
+
+      if (userRolesError) {
+        console.error('Error fetching user roles:', userRolesError)
+        throw userRolesError
+      }
+
+      const customerUserIds = userRolesData?.map(ur => ur.user_id) || []
+
+      if (customerUserIds.length === 0) {
+        console.log('No customer users found')
+        setUsers([])
+        setFilteredUsers([])
+        setAccounts([])
+        setLoading(false)
+        return
+      }
+
+      // Fetch only customer users
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, username, telegram_username')
+        .in('id', customerUserIds)
+        .order('email')
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+        throw usersError
+      }
+
+      // Fetch ad accounts with user info
+      const { data: accountsData, error: accountsError } = await supabase
+        .from('ad_accounts')
+        .select(`
+          *,
+          users:user_id (email)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (accountsError) {
+        console.error('Error fetching accounts:', accountsError)
+        throw accountsError
+      }
+
+      // Fetch all approved payments to calculate total top-up with fees for each user
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select('user_id, amount, fee')
+        .eq('status', 'approved')
+
+      if (paymentsError) {
+        console.error('Error fetching payments:', paymentsError)
+        throw paymentsError
+      }
+
+      // Calculate total top-up with fees for each user
+      const userTotals = new Map<string, number>()
+      paymentsData?.forEach(payment => {
+        const currentTotal = userTotals.get(payment.user_id) || 0
+        const paymentTotal = (payment.amount || 0) + (payment.fee || 0)
+        userTotals.set(payment.user_id, currentTotal + paymentTotal)
+      })
+
+      // Add the calculated totals to account data
+      const accountsWithTotals = (accountsData as any)?.map((account: any) => ({
+        ...account,
+        total_topup_with_fees: userTotals.get(account.user_id) || 0
+      })) || []
+
+      console.log('Fetched users:', usersData)
+      console.log('Fetched accounts:', accountsWithTotals)
+      console.log('Current user is admin:', isAdmin)
+      console.log('Auth loading state:', authLoading)
       
-      // Create dummy ad accounts
-      const dummyAccounts: AdAccount[] = [
-        {
-          id: '1',
-          user_id: 'user-1',
-          account_name: 'Ads Agency - 001 - 1945 - L001',
-          account_id: '106-201-1997',
-          status: 'active',
-          budget: 5000,
-          total_topup_amount: 12500,
-          total_topup_with_fees: 13000,
-          access_email: 'admin@adsagency.com',
-          country: 'United States',
-          timezone: 'America/New_York',
-          currency: 'USD',
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          users: { email: 'john.doe@example.com' }
-        },
-        {
-          id: '2',
-          user_id: 'user-1',
-          account_name: 'Marketing Pro - 002 - 2103 - L002',
-          account_id: '107-302-1998',
-          status: 'active',
-          budget: 7500,
-          total_topup_amount: 18000,
-          total_topup_with_fees: 18900,
-          access_email: 'admin@marketingpro.com',
-          country: 'United Kingdom',
-          timezone: 'Europe/London',
-          currency: 'GBP',
-          created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-          users: { email: 'john.doe@example.com' }
-        },
-        {
-          id: '3',
-          user_id: 'user-2',
-          account_name: 'Digital Media - 003 - 2245 - L003',
-          account_id: '108-403-1999',
-          status: 'suspended',
-          budget: 3200,
-          total_topup_amount: 8500,
-          total_topup_with_fees: 8925,
-          access_email: 'admin@digitalmedia.com',
-          country: 'Canada',
-          timezone: 'America/Toronto',
-          currency: 'CAD',
-          created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          users: { email: 'jane.smith@example.com' }
-        },
-        {
-          id: '4',
-          user_id: 'user-3',
-          account_name: 'Social Boost - 004 - 2387 - L004',
-          account_id: '109-504-2000',
-          status: 'active',
-          budget: 9200,
-          total_topup_amount: 22000,
-          total_topup_with_fees: 23100,
-          access_email: 'admin@socialboost.com',
-          country: 'Australia',
-          timezone: 'Australia/Sydney',
-          currency: 'AUD',
-          created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          users: { email: 'mike.johnson@example.com' }
-        },
-        {
-          id: '5',
-          user_id: 'user-4',
-          account_name: 'Growth Hub - 005 - 2529 - L005',
-          account_id: '110-605-2001',
-          status: 'active',
-          budget: 6800,
-          total_topup_amount: 15000,
-          total_topup_with_fees: 15750,
-          access_email: 'admin@growthhub.com',
-          country: 'Germany',
-          timezone: 'Europe/Berlin',
-          currency: 'EUR',
-          created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          users: { email: 'sarah.wilson@example.com' }
-        }
-      ]
-      
-      setUsers(dummyUsers)
-      setFilteredUsers(dummyUsers)
-      setAccounts(dummyAccounts)
+      const customerUsers = usersData || []
+      setUsers(customerUsers)
+      setFilteredUsers(customerUsers)
+      setAccounts(accountsWithTotals)
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({

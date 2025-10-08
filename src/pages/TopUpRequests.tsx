@@ -66,80 +66,32 @@ export default function TopUpRequests() {
 
   const fetchRequests = async () => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Create dummy top-up requests
-      const dummyRequests: TopUpRequest[] = [
-        {
-          id: 'topup-1',
-          user_id: 'user-1',
-          amount: 500.00,
-          transaction_id: 'TOPUP-001-2025-' + Math.random().toString(36).substring(2, 8),
-          note: 'Need balance for new campaign',
-          status: 'pending',
-          created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          user_email: 'john.doe@example.com'
-        },
-        {
-          id: 'topup-2',
-          user_id: 'user-2',
-          amount: 1200.00,
-          transaction_id: 'TOPUP-002-2025-' + Math.random().toString(36).substring(2, 8),
-          note: 'Weekly budget allocation',
-          status: 'approved',
-          created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-          user_email: 'jane.smith@example.com'
-        },
-        {
-          id: 'topup-3',
-          user_id: 'user-3',
-          amount: 800.00,
-          transaction_id: 'TOPUP-003-2025-' + Math.random().toString(36).substring(2, 8),
-          note: 'Additional funds for Q1',
-          status: 'pending',
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'mike.johnson@example.com'
-        },
-        {
-          id: 'topup-4',
-          user_id: 'user-4',
-          amount: 2000.00,
-          transaction_id: 'TOPUP-004-2025-' + Math.random().toString(36).substring(2, 8),
-          note: null,
-          status: 'approved',
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'sarah.wilson@example.com'
-        },
-        {
-          id: 'topup-5',
-          user_id: 'user-5',
-          amount: 1500.00,
-          transaction_id: 'TOPUP-005-2025-' + Math.random().toString(36).substring(2, 8),
-          note: 'Emergency campaign funding',
-          status: 'rejected',
-          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'david.brown@example.com'
-        },
-        {
-          id: 'topup-6',
-          user_id: 'user-6',
-          amount: 3500.00,
-          transaction_id: 'TOPUP-006-2025-' + Math.random().toString(36).substring(2, 8),
-          note: 'Major campaign launch',
-          status: 'pending',
-          created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-          user_email: 'emily.davis@example.com'
-        }
-      ]
-      
-      setRequests(dummyRequests)
+      // Get all top-up requests (identified by transaction_id starting with 'TOPUP-')
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('payments')
+        .select('*')
+        .like('transaction_id', 'TOPUP-%')
+        .order('created_at', { ascending: false })
+
+      if (requestsError) throw requestsError
+
+      // Get user emails for each request
+      const requestsWithEmails = await Promise.all(
+        (requestsData || []).map(async (request) => {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email')
+            .eq('id', request.user_id)
+            .single()
+
+          return {
+            ...request,
+            user_email: userData?.email || 'Unknown'
+          }
+        })
+      )
+
+      setRequests(requestsWithEmails as TopUpRequest[])
     } catch (error) {
       console.error('Error fetching top-up requests:', error)
       toast({
