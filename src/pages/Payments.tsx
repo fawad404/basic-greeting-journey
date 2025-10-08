@@ -49,31 +49,80 @@ export default function Payments() {
 
   const fetchPayments = async () => {
     try {
-      // First get all payments
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (paymentsError) throw paymentsError
-
-      // Then get user emails for each payment
-      const paymentsWithEmails = await Promise.all(
-        (paymentsData || []).map(async (payment) => {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('email')
-            .eq('id', payment.user_id)
-            .single()
-
-          return {
-            ...payment,
-            user_email: userData?.email || 'Unknown'
-          }
-        })
-      )
-
-      setPayments(paymentsWithEmails as Payment[])
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Create dummy payments
+      const dummyPayments: Payment[] = [
+        {
+          id: 'payment-1',
+          user_id: 'user-1',
+          amount: 1500.00,
+          fee: 120.00,
+          transaction_id: '16dfe9f492ea9b8cf104b880b30342',
+          note: 'Initial deposit for ad campaign',
+          status: 'pending',
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          user_email: 'john.doe@example.com'
+        },
+        {
+          id: 'payment-2',
+          user_id: 'user-2',
+          amount: 2500.00,
+          fee: 200.00,
+          transaction_id: 'cf104b880b30342abc123def456789',
+          note: 'Monthly budget top-up',
+          status: 'approved',
+          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          user_email: 'jane.smith@example.com'
+        },
+        {
+          id: 'payment-3',
+          user_id: 'user-3',
+          amount: 5000.00,
+          fee: 400.00,
+          transaction_id: '1ee47e405ea20a0def789ghi012345',
+          note: 'Large campaign funding',
+          status: 'approved',
+          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          user_email: 'mike.johnson@example.com'
+        },
+        {
+          id: 'payment-4',
+          user_id: 'user-4',
+          amount: 750.00,
+          fee: 60.00,
+          transaction_id: '29ca603c0df39f4ghi456jkl789012',
+          note: null,
+          status: 'pending',
+          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          user_email: 'sarah.wilson@example.com'
+        },
+        {
+          id: 'payment-5',
+          user_id: 'user-5',
+          amount: 3200.00,
+          fee: 256.00,
+          transaction_id: 'abc123def456ghi789jkl012mno345',
+          note: 'Q1 advertising budget',
+          status: 'approved',
+          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          user_email: 'david.brown@example.com'
+        },
+        {
+          id: 'payment-6',
+          user_id: 'user-6',
+          amount: 1800.00,
+          fee: 144.00,
+          transaction_id: 'pqr678stu901vwx234yz567abc890',
+          note: 'Campaign extension',
+          status: 'rejected',
+          created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          user_email: 'emily.davis@example.com'
+        }
+      ]
+      
+      setPayments(dummyPayments)
     } catch (error) {
       console.error('Error fetching payments:', error)
       toast({

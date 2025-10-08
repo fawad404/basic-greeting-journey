@@ -42,96 +42,109 @@ export default function UsersManagement() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch all data in parallel
-      const [userRolesResponse, usersResponse, paymentsResponse, balancesResponse] = await Promise.all([
-        supabase.from('user_roles').select('user_id, role'),
-        supabase.from('users').select('*'),
-        supabase.from('payments').select('user_id, amount, fee, status, transaction_id'),
-        supabase.from('user_balances').select('user_id, balance')
-      ]);
-
-      if (userRolesResponse.error) throw userRolesResponse.error;
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      const userRolesData = userRolesResponse.data || [];
-      const usersData = usersResponse.data || [];
-      const paymentsData = paymentsResponse.data || [];
-      const balancesData = balancesResponse.data || [];
-
-      // Create maps for efficient lookups
-      const usersMap = new Map(usersData.map(u => [u.id, u]));
-      const balancesMap = new Map(balancesData.map(b => [b.user_id, Number(b.balance) || 0]));
-      
-      // Calculate financial data for each user - matching TopUpHistory.tsx logic
-      const userFinancials = new Map();
-      paymentsData.forEach(payment => {
-        if (!userFinancials.has(payment.user_id)) {
-          userFinancials.set(payment.user_id, {
-            totalTopupAmount: 0,
-            feesPaid: 0,
-            cryptoDeposits: 0,
-            amountSpent: 0
-          });
-        }
-        
-        const userFinancial = userFinancials.get(payment.user_id);
-        const amount = Number(payment.amount) || 0;
-        const fee = Number(payment.fee) || 0;
-        
-        // For crypto payments (non-TOPUP), only count approved ones for total top-up
-        if (!payment.transaction_id || !payment.transaction_id.startsWith('TOPUP-')) {
-          if (payment.status === 'approved') {
-            userFinancial.totalTopupAmount += amount; // This is the "Total Top-up" amount from AddBalance.tsx
-            userFinancial.feesPaid += fee;
-            userFinancial.cryptoDeposits += amount; // For balance calculation
-          }
-        } else {
-          // For TOPUP transactions (money spent from balance), count pending and approved
-          if (payment.status === 'pending' || payment.status === 'approved') {
-            userFinancial.amountSpent += amount; // Sum of "Top-up Amount" from TopUpHistory.tsx
-          }
-        }
-      });
-
-
-      // Build the final users list
-      const formattedUsers = userRolesData.map(userRole => {
-        const userInfo = usersMap.get(userRole.user_id);
-        const userFinancial = userFinancials.get(userRole.user_id) || {
+      // Create dummy users
+      const dummyUsers: User[] = [
+        {
+          id: 'user-1',
+          email: 'john.doe@example.com',
+          username: 'john_doe',
+          telegram_username: '@johndoe',
+          created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 15000,
+          availableBalance: 3500,
+          amountSpent: 11500,
+          feesPaid: 1200
+        },
+        {
+          id: 'user-2',
+          email: 'jane.smith@example.com',
+          username: 'jane_smith',
+          telegram_username: '@janesmith',
+          created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 22000,
+          availableBalance: 8200,
+          amountSpent: 13800,
+          feesPaid: 1760
+        },
+        {
+          id: 'user-3',
+          email: 'mike.johnson@example.com',
+          username: 'mike_j',
+          telegram_username: '@mikejohnson',
+          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 8500,
+          availableBalance: 1200,
+          amountSpent: 7300,
+          feesPaid: 680
+        },
+        {
+          id: 'user-4',
+          email: 'sarah.wilson@example.com',
+          username: 'sarah_w',
+          telegram_username: '@sarahwilson',
+          created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 12500,
+          availableBalance: 4800,
+          amountSpent: 7700,
+          feesPaid: 1000
+        },
+        {
+          id: 'user-5',
+          email: 'david.brown@example.com',
+          username: 'david_brown',
+          telegram_username: '@davidb',
+          created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 28000,
+          availableBalance: 12000,
+          amountSpent: 16000,
+          feesPaid: 2240
+        },
+        {
+          id: 'user-6',
+          email: 'emily.davis@example.com',
+          username: 'emily_davis',
+          telegram_username: '@emilyd',
+          created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'customer',
+          totalTopupAmount: 6800,
+          availableBalance: 2100,
+          amountSpent: 4700,
+          feesPaid: 544
+        },
+        {
+          id: 'admin-1',
+          email: 'admin@temp.com',
+          username: 'admin',
+          telegram_username: '@admin',
+          created_at: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+          role: 'admin',
           totalTopupAmount: 0,
-          feesPaid: 0,
-          cryptoDeposits: 0,
-          amountSpent: 0
-        };
-        
-        // Available balance = crypto deposits - amount spent (matching TopUpHistory.tsx logic)
-        const availableBalance = userFinancial.cryptoDeposits - userFinancial.amountSpent;
-        
-        return {
-          id: userRole.user_id,
-          email: userInfo?.email || 'Unknown',
-          username: userInfo?.username || '',
-          telegram_username: userInfo?.telegram_username || '',
-          created_at: userInfo?.created_at || new Date().toISOString(),
-          role: userRole.role,
-          totalTopupAmount: userFinancial.totalTopupAmount,
-          availableBalance: availableBalance,
-          amountSpent: userFinancial.amountSpent, // Sum of Top-up Amount from TopUpHistory.tsx
-          feesPaid: userFinancial.feesPaid,
-        };
-      });
-
-      setUsers(formattedUsers);
+          availableBalance: 0,
+          amountSpent: 0,
+          feesPaid: 0
+        }
+      ]
+      
+      setUsers(dummyUsers)
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching users:', error)
       toast({
         title: 'Error',
         description: 'Failed to fetch users',
         variant: 'destructive',
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
