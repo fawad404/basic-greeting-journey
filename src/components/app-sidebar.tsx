@@ -107,8 +107,8 @@ export function AppSidebar() {
   return (
     <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"} border-r border-sidebar-border`}>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center ${collapsed ? 'w-8 h-8' : 'h-10 w-auto max-w-[140px]'}`}>
+        <div className="flex flex-col items-center gap-2">
+          <div className={`flex items-center justify-center ${collapsed ? 'w-8 h-8' : 'h-10 w-auto max-w-[140px]'}`}>
             <img 
               src="https://res.cloudinary.com/djecn7fxz/image/upload/v1759388689/Lightning_Ads_Logo_pgrj8o.png" 
               alt="Lightning Ads" 
@@ -116,14 +116,12 @@ export function AppSidebar() {
             />
           </div>
           {!collapsed && (
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs text-sidebar-foreground/60 truncate">
-                {isAdmin 
-                  ? `Welcome ${profile?.username || 'Admin'}`
-                  : `Welcome ${profile?.username || profile?.telegram_username || 'Customer'}`
-                }
-              </span>
-            </div>
+            <span className="text-xs text-sidebar-foreground/60 text-center truncate w-full">
+              {isAdmin 
+                ? `Welcome ${profile?.username || 'Admin'}`
+                : `Welcome ${profile?.username || profile?.telegram_username || 'Customer'}`
+              }
+            </span>
           )}
         </div>
       </SidebarHeader>
