@@ -108,12 +108,12 @@ export function AppSidebar() {
     <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"} border-r border-sidebar-border`}>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg overflow-hidden">
-            <img src="https://res.cloudinary.com/djecn7fxz/image/upload/v1754754707/Gorilla_Ads_2_shmbph.png" alt="Ads Gorilla" className="w-full h-full object-cover" />
+          <div className="h-8 w-auto max-w-[120px] flex items-center">
+            <img src="https://res.cloudinary.com/djecn7fxz/image/upload/v1759388689/Lightning_Ads_Logo_pgrj8o.png" alt="Lightning Ads" className="h-full w-auto object-contain" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sidebar-foreground">Ads Gorilla</span>
+              <span className="font-semibold text-sidebar-foreground">Lightning Ads</span>
               <span className="text-xs text-sidebar-foreground/60">
                 {isAdmin 
                   ? `Welcome ${profile?.username || 'Admin'}`
