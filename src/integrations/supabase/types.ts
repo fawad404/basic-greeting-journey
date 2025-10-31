@@ -7,290 +7,23 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      account_replacement_requests: {
-        Row: {
-          ad_account_id: string
-          created_at: string
-          id: string
-          reason: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          ad_account_id: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          ad_account_id?: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "account_replacement_requests_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ad_accounts: {
-        Row: {
-          access_email: string
-          account_id: string
-          account_name: string
-          budget: number
-          country: string | null
-          created_at: string
-          currency: string | null
-          id: string
-          status: string
-          timezone: string | null
-          total_topup_amount: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_email: string
-          account_id: string
-          account_name: string
-          budget?: number
-          country?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          status?: string
-          timezone?: string | null
-          total_topup_amount?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          access_email?: string
-          account_id?: string
-          account_name?: string
-          budget?: number
-          country?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          status?: string
-          timezone?: string | null
-          total_topup_amount?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_ad_accounts_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payments: {
-        Row: {
-          amount: number
-          created_at: string
-          fee: number | null
-          id: string
-          note: string | null
-          status: string
-          transaction_id: string
-          updated_at: string
-          user_balance_at_time: number | null
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          fee?: number | null
-          id?: string
-          note?: string | null
-          status?: string
-          transaction_id: string
-          updated_at?: string
-          user_balance_at_time?: number | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          fee?: number | null
-          id?: string
-          note?: string | null
-          status?: string
-          transaction_id?: string
-          updated_at?: string
-          user_balance_at_time?: number | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      requests: {
-        Row: {
-          ad_account_id: string | null
-          created_at: string
-          description: string | null
-          email: string | null
-          id: string
-          request_type: string
-          screenshot_url: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          ad_account_id?: string | null
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          request_type: string
-          screenshot_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          ad_account_id?: string | null
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          request_type?: string
-          screenshot_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_requests_ad_account_id"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_balances: {
-        Row: {
-          balance: number
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          balance?: number
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          balance?: number
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          role: string
-          telegram_username: string | null
-          updated_at: string
-          username: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          role?: string
-          telegram_username?: string | null
-          updated_at?: string
-          username?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          role?: string
-          telegram_username?: string | null
-          updated_at?: string
-          username?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_user_role: {
-        Args: { user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_role: {
-        Args: {
-          _user_id: string
-          _role: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "customer"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -417,8 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "customer"],
-    },
+    Enums: {},
   },
 } as const
