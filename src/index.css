@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Ads Gorilla brand colors - Light theme */
+    /* Lightning Ads brand colors - Light theme */
     --background: 0 0% 100%;
     --foreground: 224 71% 4%;
 
@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    /* Ads Gorilla blue primary */
+    /* Lightning Ads blue primary */
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
@@ -67,7 +67,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Ads Gorilla brand colors - Dark theme */
+    /* Lightning Ads brand colors - Dark theme */
     --background: 224 71% 4%;
     --foreground: 210 40% 98%;
 
@@ -77,7 +77,7 @@ All colors MUST be HSL.
     --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
-    /* Ads Gorilla blue primary - adjusted for dark */
+    /* Lightning Ads blue primary - adjusted for dark */
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
