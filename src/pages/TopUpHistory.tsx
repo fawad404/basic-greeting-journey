@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/integrations/supabase/client"
+import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/hooks/useAuth"
 import { CheckCircle, XCircle, Clock, History, DollarSign } from "lucide-react"
 

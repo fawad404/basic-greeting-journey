@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/integrations/supabase/client"
+import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/hooks/useAuth"
 import { Loader2, Eye, Check, X, Filter, Search, Calendar } from "lucide-react"
 

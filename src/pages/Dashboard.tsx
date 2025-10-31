@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CheckCircle2, DollarSign, Wallet, CreditCard, TrendingUp, ArrowUpRight, Users, BarChart3, Shield, Zap, ArrowRightLeft, Building2, CalendarIcon } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts"
 import { useAuth } from "@/hooks/useAuth"
-import { supabase } from "@/integrations/supabase/client"
+import { supabase } from "@/lib/supabaseClient"
 import { useState, useEffect } from "react"
 import { format, subMonths, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, parseISO } from "date-fns"
 

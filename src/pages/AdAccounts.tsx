@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/integrations/supabase/client"
+import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/hooks/useAuth"
 import { Search, MapPin, Clock, Calendar, Loader2 } from "lucide-react"
 
@@ -87,8 +87,8 @@ export default function AdAccounts() {
           .eq('status', 'approved')
 
         // Create set of replaced account IDs
-        const replacedIds = new Set(
-          approvedReplacements?.map(req => req.ad_account_id).filter(Boolean) || []
+        const replacedIds = new Set<string>(
+          (approvedReplacements?.map((req: any) => req.ad_account_id).filter((id: any): id is string => Boolean(id)) as string[]) || []
         )
         setReplacedAccountIds(replacedIds)
 
