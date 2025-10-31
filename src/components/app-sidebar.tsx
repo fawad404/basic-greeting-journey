@@ -108,13 +108,16 @@ export function AppSidebar() {
     <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"} border-r border-sidebar-border`}>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-auto max-w-[120px] flex items-center">
-            <img src="https://res.cloudinary.com/djecn7fxz/image/upload/v1759388689/Lightning_Ads_Logo_pgrj8o.png" alt="Lightning Ads" className="h-full w-auto object-contain" />
+          <div className={`flex items-center ${collapsed ? 'w-8 h-8' : 'h-10 w-auto max-w-[140px]'}`}>
+            <img 
+              src="https://res.cloudinary.com/djecn7fxz/image/upload/v1759388689/Lightning_Ads_Logo_pgrj8o.png" 
+              alt="Lightning Ads" 
+              className="h-full w-auto object-contain" 
+            />
           </div>
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-semibold text-sidebar-foreground">Lightning Ads</span>
-              <span className="text-xs text-sidebar-foreground/60">
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs text-sidebar-foreground/60 truncate">
                 {isAdmin 
                   ? `Welcome ${profile?.username || 'Admin'}`
                   : `Welcome ${profile?.username || profile?.telegram_username || 'Customer'}`
