@@ -29,11 +29,26 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Send OTP directly (no pre-check on users table)
+      // Check if user exists via edge function
+      const { data: checkResult, error: checkError } = await supabase.functions.invoke('check-user-exists', {
+        body: { email }
+      })
+
+      if (checkError || !checkResult?.exists) {
+        toast({
+          title: "Access Denied",
+          description: "You are not authorized to log in",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Send OTP only if user exists
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: false,
           emailRedirectTo: `${window.location.origin}/`
         }
       });
