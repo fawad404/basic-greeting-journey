@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         }
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in update-telegram-message function:', error)
     console.error('Error stack:', error.stack)
     return new Response(
