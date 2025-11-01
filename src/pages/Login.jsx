@@ -29,28 +29,11 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Check if user exists in our users table
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('email', email)
-        .single();
-
-      if (userError || !user) {
-        toast({
-          title: "Access Denied",
-          description: "You are not authorized to log in",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Send OTP
+      // Send OTP directly (no pre-check on users table)
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/`
         }
       });
