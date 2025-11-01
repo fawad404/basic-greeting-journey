@@ -28,10 +28,11 @@ interface UserBalance {
 interface AdAccount {
   id: string;
   account_name: string;
-  account_id: string;
-  status: string;
-  budget: number;
-  total_topup_amount: number;
+  account_id: string | null;
+  status: string | null;
+  platform: string | null;
+  budget?: number | null;
+  total_topup_amount?: number | null;
   created_at: string;
 }
 

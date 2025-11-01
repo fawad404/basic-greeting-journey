@@ -17,14 +17,15 @@ import { Search, MapPin, Clock, Calendar, Loader2 } from "lucide-react"
 interface AdAccount {
   id: string;
   account_name: string;
-  account_id: string;
-  status: string;
-  budget: number;
-  total_topup_amount: number;
-  access_email: string;
-  country: string;
-  timezone: string;
-  currency: string;
+  account_id: string | null;
+  status: string | null;
+  platform: string | null;
+  budget?: number | null;
+  total_topup_amount?: number | null;
+  access_email?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -649,10 +650,6 @@ export default function AdAccounts() {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Timezone</p>
                         <p className="text-lg font-semibold text-foreground">{selectedAccount.timezone}</p>
                       </div>
-                    </div>
-                    <div className="mt-6">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Currency</p>
-                      <p className="text-lg font-semibold text-foreground">{selectedAccount.currency}</p>
                     </div>
                   </CardContent>
                 </Card>

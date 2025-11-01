@@ -10,12 +10,14 @@ import { CheckCircle, XCircle, Clock, History, DollarSign } from "lucide-react"
 interface TopUpRequest {
   id: string
   amount: number
-  transaction_id: string
-  note: string | null
+  transaction_id: string | null
+  payment_type: string | null
+  screenshot_url: string | null
+  note?: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   updated_at: string
-  fee?: number
+  fee?: number | null
   user_balance_at_time?: number
 }
 

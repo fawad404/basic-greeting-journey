@@ -16,32 +16,50 @@ export type Database = {
     Tables: {
       ad_accounts: {
         Row: {
+          access_email: string | null
           account_id: string | null
           account_name: string
+          budget: number | null
+          country: string | null
           created_at: string
           id: string
+          notes: string | null
           platform: string | null
           status: string | null
+          timezone: string | null
+          total_topup_amount: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_email?: string | null
           account_id?: string | null
           account_name: string
+          budget?: number | null
+          country?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           platform?: string | null
           status?: string | null
+          timezone?: string | null
+          total_topup_amount?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_email?: string | null
           account_id?: string | null
           account_name?: string
+          budget?: number | null
+          country?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           platform?: string | null
           status?: string | null
+          timezone?: string | null
+          total_topup_amount?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -61,6 +79,7 @@ export type Database = {
           created_at: string
           fee: number | null
           id: string
+          note: string | null
           payment_type: string | null
           screenshot_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
@@ -73,6 +92,7 @@ export type Database = {
           created_at?: string
           fee?: number | null
           id?: string
+          note?: string | null
           payment_type?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
@@ -85,6 +105,7 @@ export type Database = {
           created_at?: string
           fee?: number | null
           id?: string
+          note?: string | null
           payment_type?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
@@ -189,6 +210,38 @@ export type Database = {
             foreignKeyName: "tickets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },

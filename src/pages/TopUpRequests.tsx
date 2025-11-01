@@ -40,8 +40,10 @@ interface TopUpRequest {
   id: string
   user_id: string
   amount: number
-  transaction_id: string
-  note: string | null
+  transaction_id: string | null
+  payment_type: string | null
+  screenshot_url: string | null
+  note?: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   updated_at: string

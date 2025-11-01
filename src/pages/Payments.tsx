@@ -17,8 +17,10 @@ interface Payment {
   user_id: string
   amount: number
   fee: number | null
-  transaction_id: string
-  note: string | null
+  transaction_id: string | null
+  payment_type: string | null
+  screenshot_url: string | null
+  note?: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   user_email?: string
