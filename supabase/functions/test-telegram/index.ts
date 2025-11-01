@@ -141,7 +141,7 @@ This is a test notification from your payment system bot.
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error', 
-        details: error.message 
+        details: (error as any).message 
       }),
       { 
         status: 500, 

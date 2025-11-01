@@ -1,4 +1,4 @@
-import { supabase } from 'https://esm.sh/@supabase/supabase-js@2.54.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
         }
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in send-telegram-notification function:', error)
     console.error('Error stack:', error.stack)
     return new Response(
