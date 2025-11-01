@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from "@/integrations/supabase/client"
 import { CheckCircle, XCircle, Clock, Receipt, ExternalLink, Edit, Filter, Search, Calendar } from "lucide-react"
 
 interface Payment {

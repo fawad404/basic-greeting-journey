@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -58,12 +58,12 @@ export default function UsersManagement() {
       const balancesData = balancesResponse.data || [];
 
       // Create maps for efficient lookups
-      const usersMap = new Map<string, any>((usersData as any[]).map((u: any) => [u.id, u]));
-      const balancesMap = new Map<string, number>((balancesData as any[]).map((b: any) => [b.user_id, Number(b.balance) || 0]));
+      const usersMap = new Map(usersData.map(u => [u.id, u]));
+      const balancesMap = new Map(balancesData.map(b => [b.user_id, Number(b.balance) || 0]));
       
       // Calculate financial data for each user - matching TopUpHistory.tsx logic
       const userFinancials = new Map();
-      paymentsData.forEach((payment: any) => {
+      paymentsData.forEach(payment => {
         if (!userFinancials.has(payment.user_id)) {
           userFinancials.set(payment.user_id, {
             totalTopupAmount: 0,
@@ -95,7 +95,7 @@ export default function UsersManagement() {
 
       // Build the final users list
       const formattedUsers = userRolesData.map(userRole => {
-        const userInfo = usersMap.get(userRole.user_id) as any;
+        const userInfo = usersMap.get(userRole.user_id);
         const userFinancial = userFinancials.get(userRole.user_id) || {
           totalTopupAmount: 0,
           feesPaid: 0,

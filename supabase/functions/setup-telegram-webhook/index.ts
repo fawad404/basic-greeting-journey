@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
         }
       )
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error setting up webhook:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),

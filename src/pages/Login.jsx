@@ -29,12 +29,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Check if user exists via edge function
-      const { data: checkResult, error: checkError } = await supabase.functions.invoke('check-user-exists', {
-        body: { email }
-      })
+      // Check if user exists in our users table
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('email', email)
+        .single();
 
-      if (checkError || !checkResult?.exists) {
+      if (userError || !user) {
         toast({
           title: "Access Denied",
           description: "You are not authorized to log in",
@@ -44,7 +46,7 @@ export default function Login() {
         return;
       }
 
-      // Send OTP only if user exists
+      // Send OTP
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {

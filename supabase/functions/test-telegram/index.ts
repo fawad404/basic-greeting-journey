@@ -136,7 +136,7 @@ This is a test notification from your payment system bot.
         }
       )
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error in test-telegram function:', error)
     return new Response(
       JSON.stringify({ 
